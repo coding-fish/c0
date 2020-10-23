@@ -123,7 +123,6 @@ namespace miniplc0 {
             // 如果读到的字符导致了状态的转移，说明它是一个token的第一个字符
             if (current_state != DFAState::INITIAL_STATE) {// ignore white spaces
               pos = previousPos();  // 记录该字符的的位置为token的开始位置
-              ss << ch;                                    // 存储读到的字符
             }
             // 读到了不合法的字符
             if (invalid) {
@@ -134,6 +133,9 @@ namespace miniplc0 {
                                     std::make_optional<CompilationError>(
                                             pos, ErrorCode::ErrInvalidInput));
             }
+            // 如果读到的字符导致了状态的转移，说明它是一个token的第一个字符
+            if (current_state != DFAState::INITIAL_STATE)  // ignore white spaces
+              ss << ch;                                    // 存储读到的字符
             break;
           }
 
@@ -144,14 +146,14 @@ namespace miniplc0 {
               int32_t d;
               try {
                 ss >> d;// 转换为数字
-                ss.str("");// 清空缓存
                 ss.clear();// 设置标志位
+                ss.str("");// 清空缓存
                 unreadLast();// 回退一个字符
                 // 解析成功则返回无符号整数类型的token，否则返回编译错误
                 return std::make_pair(std::make_optional<Token>(TokenType::UNSIGNED_INTEGER,
                                                                 d, pos, currentPos()),
                                       std::optional<CompilationError>());
-              } catch (_exception e) {
+              } catch (std::exception &e) {
                 return std::make_pair(std::optional<Token>(),
                                       std::make_optional<CompilationError>(
                                               pos, ErrorCode::ErrInvalidInput));
@@ -166,8 +168,8 @@ namespace miniplc0 {
               int32_t d;// 数字以unsigned int 形式返回
               try {
                 ss >> d;// 转换为数字
-                ss.str("");// 清空缓存
                 ss.clear();// 设置标志位
+                ss.str("");// 清空缓存
                 unreadLast();// 回退一个字符
                 // 解析成功则返回无符号整数类型的token，否则返回编译错误
                 return std::make_pair(std::make_optional<Token>(TokenType::UNSIGNED_INTEGER,
@@ -187,29 +189,29 @@ namespace miniplc0 {
             if (!current_char.has_value()) {
               std::string iden;// 标识符以string的形式返回
               ss >> iden;// 转换为string
-              ss.str("");// 清空缓存
               ss.clear();// 设置标志位
+              ss.str("");// 清空缓存
               unreadLast();
               //     如果解析结果是关键字，那么返回对应关键字的token，否则返回标识符的token
-              if (strcmp(iden.c_str(), "BEGIN") == 0)
+              if (strcmp(iden.c_str(), "begin") == 0)
                 return std::make_pair(std::make_optional<Token>(TokenType::BEGIN,
-                                                                NULL, pos, currentPos()),
+                                                                "begin", pos, currentPos()),
                                       std::optional<CompilationError>());
-              else if (strcmp(iden.c_str(), "END") == 0)
+              else if (strcmp(iden.c_str(), "end") == 0)
                 return std::make_pair(std::make_optional<Token>(TokenType::END,
-                                                                NULL, pos, currentPos()),
+                                                                "end", pos, currentPos()),
                                       std::optional<CompilationError>());
-              else if (strcmp(iden.c_str(), "VAR") == 0)
+              else if (strcmp(iden.c_str(), "var") == 0)
                 return std::make_pair(std::make_optional<Token>(TokenType::VAR,
-                                                                NULL, pos, currentPos()),
+                                                                "var", pos, currentPos()),
                                       std::optional<CompilationError>());
-              else if (strcmp(iden.c_str(), "CONST") == 0)
+              else if (strcmp(iden.c_str(), "const") == 0)
                 return std::make_pair(std::make_optional<Token>(TokenType::CONST,
-                                                                NULL, pos, currentPos()),
+                                                                "const", pos, currentPos()),
                                       std::optional<CompilationError>());
-              else if (strcmp(iden.c_str(), "PRINT") == 0)
+              else if (strcmp(iden.c_str(), "print") == 0)
                 return std::make_pair(std::make_optional<Token>(TokenType::PRINT,
-                                                                NULL, pos, currentPos()),
+                                                                "print", pos, currentPos()),
                                       std::optional<CompilationError>());
               else
                 return std::make_pair(std::make_optional<Token>(TokenType::IDENTIFIER,
@@ -224,29 +226,29 @@ namespace miniplc0 {
             else {
               std::string iden;
               ss >> iden;
-              ss.str("");
               ss.clear();
+              ss.str("");
               unreadLast();
               //     如果解析结果是关键字，那么返回对应关键字的token，否则返回标识符的token
-              if (strcmp(iden.c_str(), "BEGIN") == 0)
+              if (strcmp(iden.c_str(), "begin") == 0)
                 return std::make_pair(std::make_optional<Token>(TokenType::BEGIN,
-                                                                NULL, pos, currentPos()),
+                                                                "begin", pos, currentPos()),
                                       std::optional<CompilationError>());
-              else if (strcmp(iden.c_str(), "END") == 0)
+              else if (strcmp(iden.c_str(), "end") == 0)
                 return std::make_pair(std::make_optional<Token>(TokenType::END,
-                                                                NULL, pos, currentPos()),
+                                                                "end", pos, currentPos()),
                                       std::optional<CompilationError>());
-              else if (strcmp(iden.c_str(), "VAR") == 0)
+              else if (strcmp(iden.c_str(), "var") == 0)
                 return std::make_pair(std::make_optional<Token>(TokenType::VAR,
-                                                                NULL, pos, currentPos()),
+                                                                "var", pos, currentPos()),
                                       std::optional<CompilationError>());
-              else if (strcmp(iden.c_str(), "CONST") == 0)
+              else if (strcmp(iden.c_str(), "const") == 0)
                 return std::make_pair(std::make_optional<Token>(TokenType::CONST,
-                                                                NULL, pos, currentPos()),
+                                                                "const", pos, currentPos()),
                                       std::optional<CompilationError>());
               else if (strcmp(iden.c_str(), "PRINT") == 0)
                 return std::make_pair(std::make_optional<Token>(TokenType::PRINT,
-                                                                NULL, pos, currentPos()),
+                                                                "print", pos, currentPos()),
                                       std::optional<CompilationError>());
               else
                 return std::make_pair(std::make_optional<Token>(TokenType::IDENTIFIER,

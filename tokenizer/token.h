@@ -77,7 +77,7 @@ class Token final {
     } catch (const std::bad_any_cast &) {
     }
     try {
-      return std::to_string(std::any_cast<int32_t>(_value));// 说明无符号整数是以int_32的形式储存的
+      return std::to_string(std::any_cast<int32_t>(_value));// 说明无符号整数是以int32_t的形式储存的
     } catch (const std::bad_any_cast &) {
       DieAndPrint("No suitable cast for token value.");
     }

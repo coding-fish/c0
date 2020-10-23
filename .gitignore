@@ -1,8 +1,6 @@
-.vs
-CMakeSettings.json
-*.plc0
-*.txt
-!CMakeLists.txt
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
 build
-.clangd
-compile_commands.json
+bin

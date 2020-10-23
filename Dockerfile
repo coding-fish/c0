@@ -1,8 +1,6 @@
-FROM alpine:3
-# RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories
-RUN apk add cmake gcc g++ libgcc build-base make --no-cache
-WORKDIR /app/
-COPY . /app/
-WORKDIR /app/build
-RUN cmake ..
-RUN make -j4
+# gradle 好大
+FROM gradle:jdk14
+WORKDIR /app
+COPY build.gradle gradle settings.gradle miniplc0-java.iml /app/
+COPY src /app/src
+RUN gradle fatjar --no-daemon
