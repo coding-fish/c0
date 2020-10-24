@@ -2,6 +2,7 @@ package miniplc0java.tokenizer;
 
 import miniplc0java.error.TokenizeError;
 import miniplc0java.error.ErrorCode;
+import miniplc0java.util.Pos;
 
 public class Tokenizer {
 
@@ -40,6 +41,7 @@ public class Tokenizer {
 
     private Token lexUInt() throws TokenizeError {
         StringBuilder digitStr = new StringBuilder();
+        Pos startPos = it.currentPos();
         while (!it.isEOF() && Character.isDigit(it.peekChar())) {
             digitStr.append(it.nextChar());
         }
@@ -49,33 +51,37 @@ public class Tokenizer {
             String s = digitStr.toString();
             Integer digit = Integer.valueOf(s);
             // Token 的 Value 应填写数字的值
-            return new Token(TokenType.Uint, digit, it.previousPos(), it.currentPos());
+            return new Token(TokenType.Uint, digit, startPos, it.currentPos());
         }
-        catch(NumberFormatException e){
-            throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+        catch (ArithmeticException e){
+            throw new TokenizeError(ErrorCode.IntegerOverflow, startPos);
+        }
+        catch (NumberFormatException e){
+            throw new TokenizeError(ErrorCode.InvalidInput, startPos);
         }
     }
 
     private Token lexIdentOrKeyword() throws TokenizeError {
         StringBuilder ident = new StringBuilder();
+        Pos startPos = it.currentPos();
         while (!it.isEOF() && Character.isAlphabetic(it.peekChar())) {
             ident.append(it.nextChar());
         }
         String identStr = ident.toString();
         // -- 如果是关键字，则返回关键字类型的 token
         if (identStr.equals("begin"))
-            return new Token(TokenType.Begin, "begin", it.previousPos(), it.currentPos());
+            return new Token(TokenType.Begin, "begin", startPos, it.currentPos());
         else if (identStr.equals("end"))
-            return new Token(TokenType.End, "end", it.previousPos(), it.currentPos());
+            return new Token(TokenType.End, "end", startPos, it.currentPos());
         else if (identStr.equals("var"))
-            return new Token(TokenType.Var, "var", it.previousPos(), it.currentPos());
+            return new Token(TokenType.Var, "var", startPos, it.currentPos());
         else if (identStr.equals("const"))
-            return new Token(TokenType.Const, "const", it.previousPos(), it.currentPos());
+            return new Token(TokenType.Const, "const", startPos, it.currentPos());
         else if (identStr.equals("print"))
-            return new Token(TokenType.Print, "print", it.previousPos(), it.currentPos());
+            return new Token(TokenType.Print, "print", startPos, it.currentPos());
         // -- 否则，返回标识符
         else
-            return new Token(TokenType.Ident, identStr, it.previousPos(), it.currentPos());
+            return new Token(TokenType.Ident, identStr, startPos, it.currentPos());
     }
 
     private Token lexOperatorOrUnknown() throws TokenizeError {
