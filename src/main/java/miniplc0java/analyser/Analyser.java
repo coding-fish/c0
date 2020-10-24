@@ -203,7 +203,7 @@ public final class Analyser {
     }
 
     private void analyseMain() throws CompileError {
-        throw new Error("Not implemented");
+//        throw new Error("Not implemented");
     }
 
     private void analyseConstantDeclaration() throws CompileError {
@@ -225,11 +225,11 @@ public final class Analyser {
     }
 
     private void analyseVariableDeclaration() throws CompileError {
-        throw new Error("Not implemented");
+//        throw new Error("Not implemented");
     }
 
     private void analyseStatementSequence() throws CompileError {
-        throw new Error("Not implemented");
+//        throw new Error("Not implemented");
     }
 
     private void analyseStatement() throws CompileError {
