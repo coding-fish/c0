@@ -314,11 +314,13 @@ public final class Analyser {
     private void analyseExpression() throws CompileError {
         analyseItem();
         while (check(TokenType.Plus) || check(TokenType.Minus)) {
-            if (nextIf(TokenType.Plus) != null) {
+            if (check(TokenType.Plus)) {
+                next();
                 analyseItem();
                 instructions.add(new Instruction(Operation.ADD));
             }
-            else if (nextIf(TokenType.Minus) != null) {
+            else if (check(TokenType.Minus)) {
+                next();
                 analyseItem();
                 instructions.add(new Instruction(Operation.SUB));
             }
@@ -367,11 +369,13 @@ public final class Analyser {
     private void analyseItem() throws CompileError {
         analyseFactor();
         while (check(TokenType.Mult) || check(TokenType.Div)) {
-            if (expect(TokenType.Mult) != null) {
+            if (check(TokenType.Mult)) {
+                next();
                 analyseFactor();
                 instructions.add(new Instruction(Operation.MUL));
             }
-            else if (expect(TokenType.Div) != null) {
+            else if (check(TokenType.Div)) {
+                next();
                 analyseFactor();
                 instructions.add(new Instruction(Operation.DIV));
             }
