@@ -254,6 +254,8 @@ public final class Analyser {
                 declareSymbol(name, curPos);
                 instructions.add(new Instruction(Operation.STO, offset));
             }
+            // 分号
+            expect(TokenType.Semicolon);
         }
     }
 
