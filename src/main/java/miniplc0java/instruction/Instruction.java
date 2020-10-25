@@ -57,16 +57,16 @@ public class Instruction {
         switch (this.opt) {
             case ADD:
             case DIV:
-            case ILL:
+            case ILL:// panic
             case MUL:
             case SUB:
-            case WRT:
+            case WRT:// printf("%d\n", stack[sp-1]);sp--;
                 return String.format("%s", this.opt);
-            case LIT:
-            case LOD:
-            case STO:
+            case LIT:// stack[sp++]=x;
+            case LOD:// stack[sp++]=stack[x];
+            case STO:// stack[x]=stack[sp-1];sp--;
                 return String.format("%s %s", this.opt, this.x);
-            default:
+            default:// panic
                 return "ILL";
         }
     }
