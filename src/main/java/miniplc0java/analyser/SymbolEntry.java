@@ -1,19 +1,29 @@
 package miniplc0java.analyser;
 
+import miniplc0java.util.Ty;
+
 public class SymbolEntry {
+    String name;// 变量名
+    Ty type;// 变量类型,或函数的返回值类型
     boolean isConstant;
     boolean isInitialized;
     int stackOffset;
+    int depth;// 嵌套层次
+    Object value;// 由于在o0中进行栈上赋值，因此先存起来
+    int offset;// 对全局变量有意义
 
-    /**
-     * @param isConstant
-     * @param isDeclared
-     * @param stackOffset
-     */
-    public SymbolEntry(boolean isConstant, boolean isDeclared, int stackOffset) {
+    public SymbolEntry(String name, Ty type, boolean isConstant, boolean isDeclared, int stackOffset, int depth) {
+        this.name = name;
+        this.type = type;
         this.isConstant = isConstant;
         this.isInitialized = isDeclared;
         this.stackOffset = stackOffset;
+        this.depth = depth;
+        this.value = null;// 声明变量未赋值属于UB，因此不予赋初值
+    }
+
+    public void setType(Ty type) {
+        this.type = type;
     }
 
     /**
@@ -47,7 +57,8 @@ public class SymbolEntry {
     /**
      * @param isInitialized the isInitialized to set
      */
-    public void setInitialized(boolean isInitialized) {
+    public void setInitialized(boolean isInitialized, Object value) {
+        this.value = value;
         this.isInitialized = isInitialized;
     }
 

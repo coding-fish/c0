@@ -85,6 +85,10 @@ public class App {
                 }
             } catch (Exception e) {
                 // 遇到错误不输出，直接退出
+//                // 也输出，为了调试
+//                for (Token token : tokens) {
+//                    output.println(token.toString());
+//                }
                 System.err.println(e);
                 System.exit(0);
                 return;
@@ -101,11 +105,14 @@ public class App {
             } catch (Exception e) {
                 // 遇到错误不输出，直接退出
                 System.err.println(e);
-                System.exit(0);
+                System.exit(1);
                 return;
             }
+            output.print(Instruction.addHead());
+            // 还有全局变量表（包含字符串）
+            // 下面是各个函数
             for (Instruction instruction : instructions) {
-                output.println(instruction.toString());
+                output.print(instruction.toString());
             }
         } else {
             System.err.println("Please specify either '--analyse' or '--tokenize'.");

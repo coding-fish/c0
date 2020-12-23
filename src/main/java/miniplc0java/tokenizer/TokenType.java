@@ -1,80 +1,75 @@
 package miniplc0java.tokenizer;
 
 public enum TokenType {
-    /** 空 */
-    None,
-    /** 无符号整数 */
-    Uint,
+    /** 单词 */
+    FN_KW,//     -> 'fn'
+    LET_KW ,//   -> 'let'
+    CONST_KW,//  -> 'const'
+    AS_KW,//     -> 'as'
+    WHILE_KW,//  -> 'while'
+    IF_KW,//     -> 'if'
+    ELSE_KW,//   -> 'else'
+    RETURN_KW,// -> 'return'
+    // 扩展 c0
+    BREAK_KW,//  -> 'break'
+    CONTINUE_KW,// -> 'continue'
+
+    /** 字面量*/
+    digit,// -> [0-9]
+    UINT_LITERAL,// -> digit+
+    escape_sequence,// -> '\' [\\"'nrt]
+    string_regular_char,// -> [^"\\]
+    STRING_LITERAL,// -> '"' (string_regular_char | escape_sequence)* '"'
+    // 扩展 c0
+    DOUBLE_LITERAL,// -> digit+ '.' digit+ ([eE] [+-]? digit+)?
+    char_regular_char,// -> [^'\\]
+    CHAR_LITERAL,// -> '\'' (char_regular_char | escape_sequence) '\''
+
     /** 标识符 */
-    Ident,
-    /** Begin */
-    Begin,
-    /** End */
-    End,
-    /** Var */
-    Var,
-    /** Const */
-    Const,
-    /** Print */
-    Print,
-    /** 加号 */
-    Plus,
-    /** 减号 */
-    Minus,
-    /** 乘号 */
-    Mult,
-    /** 除号 */
-    Div,
-    /** 等号 */
-    Equal,
-    /** 分号 */
-    Semicolon,
-    /** 左括号 */
-    LParen,
-    /** 右括号 */
-    RParen,
-    /** 文件尾 */
+    IDENT,// -> [_a-zA-Z] [_a-zA-Z0-9]*
+
+    /** 运算符 */
+    PLUS,//      -> '+'
+    MINUS,//     -> '-'
+    MUL,//       -> '*'
+    DIV,//       -> '/'
+    ASSIGN,//    -> '='
+    EQ,//        -> '=='
+    NEQ,//       -> '!='
+    LT,//        -> '<'
+    GT,//        -> '>'
+    LE,//        -> '<='
+    GE,//        -> '>='
+    L_PAREN,//   -> '('
+    R_PAREN,//   -> ')'
+    L_BRACE,//   -> '{'
+    R_BRACE,//   -> '}'
+    ARROW,//     -> '->'
+    COMMA,//     -> ','
+    COLON,//     -> ':'
+    SEMICOLON,// -> ';'
+
+    /** 注释*/
+    COMMENT,// -> '//' regex(.*) '\n'
+
+    /** 文件尾(duplicated) */
     EOF;
 
     @Override
     public String toString() {
         switch (this) {
-            case None:
-                return "NullToken";
-            case Begin:
-                return "Begin";
-            case Const:
-                return "Const";
-            case Div:
-                return "DivisionSign";
-            case EOF:
-                return "EOF";
-            case End:
-                return "End";
-            case Equal:
-                return "EqualSign";
-            case Ident:
-                return "Identifier";
-            case LParen:
-                return "LeftBracket";
-            case Minus:
-                return "MinusSign";
-            case Mult:
-                return "MultiplicationSign";
-            case Plus:
-                return "PlusSign";
-            case Print:
-                return "Print";
-            case RParen:
-                return "RightBracket";
-            case Semicolon:
-                return "Semicolon";
-            case Uint:
-                return "UnsignedInteger";
-            case Var:
-                return "Var";
+            case UINT_LITERAL:
+                return "Uint";
+            case IDENT:
+                return "Ident";
+            case DOUBLE_LITERAL:
+                return "Double";
+            case CHAR_LITERAL:
+                return "Char";
+            case STRING_LITERAL:
+                return "String";
             default:
-                return "InvalidToken";
+                return "";// 为了省事，毕竟类型也可以从value看出来
         }
     }
 }
