@@ -12,6 +12,7 @@ public class Function {
     public String name;// 用于编译过程中在函数列表中检索
     public Ty returnType;// 可以是void
     public ArrayList<Variable> paramList = new ArrayList<>();// 参数列表
+    // 函数的局部变量放多少个，要不先都给10个？
     public int offset;// 全局符号表偏移用于函数编号
     public int localOffset;// 函数表里的偏移(从1开始数)，用于call指令
 

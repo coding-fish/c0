@@ -25,7 +25,7 @@ public class Token {
     // 绕过错误处理，不需要存储位置的构造方法
     public Token(TokenType tokenType, Object value) {
         this.tokenType = tokenType;
-        this.value = value;
+        this.value = value;// FIXME:.toString();
     }
 
     public Token(Token token) {
@@ -52,7 +52,7 @@ public class Token {
     }
 
     public String getValueString() {
-        if (value instanceof Integer || value instanceof String || value instanceof Character) {
+        if (value instanceof Integer || value instanceof String || value instanceof Character || value instanceof Double) {
             return value.toString();
         }
         throw new Error("No suitable cast for token value.");
@@ -75,7 +75,8 @@ public class Token {
             return Ty.VOID;
             // 变量类型和函数的返回值类型应当仅限于上面三种
         else
-            throw new AnalyzeError(ErrorCode.UnrecognizedType, this.startPos);
+            return Ty.STRING;
+            //throw new AnalyzeError(ErrorCode.UnrecognizedType, this.startPos);
     }
 
     public void setTokenType(TokenType tokenType) {

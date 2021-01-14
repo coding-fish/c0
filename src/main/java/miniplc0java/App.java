@@ -108,12 +108,14 @@ public class App {
                 System.exit(1);
                 return;
             }
+            // 标准头magic + version
+//            System.out.println("输出标准头");
             output.print(Instruction.addHead());
-            // 还有全局变量表（包含字符串）
-            // 下面是各个函数
-            for (Instruction instruction : instructions) {
-                output.print(instruction.toString());
-            }
+            // 全局表
+//            System.out.println("输出全局表");
+            output.print(Instruction.addGlob());
+//            System.out.println("输出函数指令");
+            output.print(Instruction.addFunc());
         } else {
             System.err.println("Please specify either '--analyse' or '--tokenize'.");
             System.exit(3);

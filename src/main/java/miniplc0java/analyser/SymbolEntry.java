@@ -22,6 +22,18 @@ public class SymbolEntry {
         this.value = null;// 声明变量未赋值属于UB，因此不予赋初值
     }
 
+    public String getName() {
+        return this.name;
+    }
+
+    public Ty getType() {
+        return this.type;
+    }
+
+    public int getDepth() {
+        return this.depth;
+    }
+
     public void setType(Ty type) {
         this.type = type;
     }

@@ -1,17 +1,24 @@
 package miniplc0java.instruction;
 
+import miniplc0java.analyser.Analyser;
+import miniplc0java.analyser.Function;
+import miniplc0java.analyser.SymbolEntry;
+import miniplc0java.error.CompileError;
+import miniplc0java.tokenizer.Token;
+import miniplc0java.util.Ty;
+
+import java.util.ArrayList;
 import java.util.Objects;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.util.Stack;
 import java.util.logging.Logger;
 
 public class Instruction {
     private Operation opt;//u8
     int x;  //u32 i32
     double y; //u64 i64
-    // TODO:提供计算全局变量偏移、函数偏移的接口
-    //  这个可以在分析完整个c0调用
 
     // 没有操作数
     public Instruction(Operation opt) {
@@ -23,10 +30,15 @@ public class Instruction {
     // 一个操作数
     public Instruction(Operation opt, Object num) {
         this.opt = opt;
-        this.x = (int) num;
-        this.y = (double) num;
+//        if (num instanceof Integer)
+            this.x = (int) num;
+//        else if (num instanceof Double)//似乎，没有这个类型的操作数?
+//            this.y = (double) num;
+//        else
+//            this.x = (int) num;
     }
 
+    // 缺省构造函数，可能用于占位，但实际没用上
     public Instruction() {
         this.opt = Operation.nop;
         this.x = 0;
@@ -261,8 +273,68 @@ public class Instruction {
     public static String addHead() {
         // magic-number and version in o0
         return getString(getIntBytes(0x72303b3e)) + getString(getIntBytes(0x00000001));
-        // TODO:添加全局变量表，位于Analyser的globVarTable
-        //  int & double -> 0 0 0 0 0 0 0 0
-        //  string -> toString
+    }
+
+    public static ArrayList<Token> globalVarTable = new ArrayList<Token>();
+    public static Stack<SymbolEntry> symbolTable = new Stack<SymbolEntry>();
+
+    public static String addGlob() throws CompileError {
+        // 应该用StringBuilder,懒得改了
+        String ret = new String();
+        ret += getString(getIntBytes(globalVarTable.size()));// glob.count
+        for (Token t : globalVarTable) {
+            if (t.getType() == Ty.UINT) {
+                SymbolEntry s = Analyser.getSymbol(Analyser.symbolTable, t.getValueString());
+                if (s.isConstant())
+                    ret += getString(getByteBytes(1));
+                else
+                    ret += getString(getByteBytes(0));
+                // 长度为8
+                ret += getString(getIntBytes(8));
+                // 初始值为0
+                ret += getString(getLongBytes(0));
+            } else//字符串
+            {
+                ret += getString(getByteBytes(1));// is_const
+                ret += getString(getIntBytes(t.getValueString().length()));// count
+                String string = t.getValueString();
+                char[] ch = string.toCharArray();// 转ascii
+                for (int i = 0; i < ch.length; i++) {
+                    ret += getString(getIntBytes(Integer.valueOf(ch[i]).intValue()));
+                }// value
+            }
+        }
+        return ret;
+    }
+
+    public static ArrayList<Function> funcTable = new ArrayList<Function>();
+
+    public static String addFunc() {
+        String ret = new String();
+        ret += getString(getIntBytes(funcTable.size()));// func.count
+        for (Function f : funcTable) {
+            int offset = calcFuncOffset(f.getName());// 函数在globTable中的偏移
+            ret += getString(getIntBytes(offset));// name,好像没什么用
+            if (f.returnType == Ty.VOID)
+                ret += getString(getIntBytes(0));// ret_slots
+            else
+                ret += getString(getIntBytes(1));// 返回一个int
+            ret += getString(getIntBytes(f.calParamSlot()));// param_slots
+            ret += getString(getIntBytes(10));// TODO:loc_slots
+            ret += getString(getIntBytes(f.instructions.size()));// body.count
+            for (Instruction i : f.instructions) {
+                ret += i.toString();// body items
+            }
+        }
+        return ret;
+    }
+
+    private static int calcFuncOffset(String name) {
+        // 函数名在全局表中的偏移
+        for (int i = 0; i < Instruction.globalVarTable.size(); i++) {
+            if (Instruction.globalVarTable.get(i).getValueString().equals(name))
+                return i;
+        }
+        return -1;// 随便整的，不存在这种情况
     }
 }
