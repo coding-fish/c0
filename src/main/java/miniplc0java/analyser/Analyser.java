@@ -419,7 +419,7 @@ public final class Analyser {
         // 找不到main会报错
         int offset = calcFuncOffset("main", curPos);
         this.funcTable.get(0).addInstruction(new Instruction(Operation.call, offset));
-        System.out.println("Analysed finished.");
+//        System.out.println("Analysed finished.");
     }
 
     /**
@@ -453,12 +453,12 @@ public final class Analyser {
                 Object value = rightExp.value;
                 declareSymbol(name, curPos, value);
                 // 添加到全局表
-                if (this.currentDepth == 0)
-                    addGlobVar(new Token(TokenType.UINT_LITERAL, rightExp.value));
+//                if (this.currentDepth == 0)
+//                    addGlobVar(new Token(TokenType.UINT_LITERAL, rightExp.value));
             } else {
                 // 添加到全局表
-                if (this.currentDepth == 0)
-                    addGlobVar(new Token(TokenType.UINT_LITERAL, 0));
+//                if (this.currentDepth == 0)
+//                    addGlobVar(new Token(TokenType.UINT_LITERAL, 0));
             }
 
             // 分号
@@ -496,8 +496,8 @@ public final class Analyser {
             Object value = rightExp.value;
             declareSymbol(name, curPos, value);
             // 添加到全局表
-            if (this.currentDepth == 0)
-                addGlobVar(new Token(TokenType.UINT_LITERAL, rightExp.value));
+//            if (this.currentDepth == 0)
+//                addGlobVar(new Token(TokenType.UINT_LITERAL, rightExp.value));
             // 分号
             expect(TokenType.SEMICOLON);
         }

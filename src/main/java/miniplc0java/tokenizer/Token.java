@@ -52,10 +52,11 @@ public class Token {
     }
 
     public String getValueString() {
-        if (value instanceof Integer || value instanceof String || value instanceof Character || value instanceof Double) {
+        if (value instanceof Integer || value instanceof String
+                || value instanceof Character || value instanceof Double) {
             return value.toString();
         }
-        throw new Error("No suitable cast for token value.");
+        throw new Error("[Class Token]No suitable cast for token value.");
     }
 
     public TokenType getTokenType() {

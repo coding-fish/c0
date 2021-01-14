@@ -114,6 +114,9 @@ public class App {
             // 全局表
 //            System.out.println("输出全局表");
             output.print(Instruction.addGlob());
+            for (Token t : Instruction.globalVarTable) {
+                System.out.println(t.getValueString());
+            }
 //            System.out.println("输出函数指令");
             output.print(Instruction.addFunc());
         } else {
