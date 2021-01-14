@@ -87,7 +87,8 @@ public class Tokenizer {
         Pos startPos = it.currentPos();
         // 先假设Character.isAlphabetic()不能识别下划线
         while (!it.isEOF() &&
-                (Character.isAlphabetic(it.peekChar()) || it.peekChar() == '_')) {
+                (Character.isDigit(it.peekChar()) || Character.isLetter(it.peekChar())
+                        || it.peekChar() == '_')) {
             ident.append(it.nextChar());
         }
         String identStr = ident.toString();

@@ -19,6 +19,6 @@ public class Pos {
 
     @Override
     public String toString() {
-        return new StringBuilder().append("Pos(row: ").append(row).append(", col: ").append(col).append(")").toString();
+        return new StringBuilder().append("Pos(row: ").append(row+1).append(", col: ").append(col+1).append(")").toString();
     }
 }

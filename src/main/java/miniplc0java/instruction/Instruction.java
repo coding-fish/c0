@@ -30,10 +30,10 @@ public class Instruction {
     // 一个操作数
     public Instruction(Operation opt, Object num) {
         this.opt = opt;
-//        if (num instanceof Integer)
+        if (num instanceof Integer)
             this.x = (int) num;
-//        else if (num instanceof Double)//似乎，没有这个类型的操作数?
-//            this.y = (double) num;
+        else if (num instanceof Double)// TODO:似乎，没有这个类型的操作数?
+            this.y = (double) num;
 //        else
 //            this.x = (int) num;
     }
@@ -320,7 +320,7 @@ public class Instruction {
             else
                 ret += getString(getIntBytes(1));// 返回一个int
             ret += getString(getIntBytes(f.calParamSlot()));// param_slots
-            ret += getString(getIntBytes(10));// TODO:loc_slots
+            ret += getString(getIntBytes(100));// TODO:loc_slots
             ret += getString(getIntBytes(f.instructions.size()));// body.count
             for (Instruction i : f.instructions) {
                 ret += i.toString();// body items

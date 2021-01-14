@@ -199,9 +199,12 @@ public final class Analyser {
     private void popNestedBlock() {
         // 字符串字面量，函数，加上全局变量，单独开一个地方存
         // 最终栈里面剩下的就是全局变量，不过没什么用
-        this.currentDepth--;
-        for (int i = this.nextOffset; i > this.stackBP; i--)
+        while (symbolTable.lastElement().getDepth() == this.currentDepth)
             symbolTable.pop();
+        this.currentDepth--;
+//        this.currentDepth--;
+//        for (int i = this.nextOffset; i > this.stackBP; i--)
+//            symbolTable.pop();
         this.nextOffset = this.stackBP;
     }
 
@@ -565,10 +568,12 @@ public final class Analyser {
             setFuncType(name, type);
             // 函数体，可能有return语句（需要检查类型）
             // 进入时记得增加嵌套层次
-            analyseBlockStmt();
             // TODO:局部变量在哪存
+            analyseBlockStmt();
             // 退出该嵌套层次，回到上一层
             popNestedBlock();
+            for (SymbolEntry s : symbolTable)
+            System.out.println(s.getName()+" "+s.getDepth());
 //            System.out.println("func:"+getCurFunc().getName()+"\tfinished.");
         }
     }
@@ -701,9 +706,10 @@ public final class Analyser {
         } else {
             // 有返回类型的必须有返回值，还要类型一致
             ExpVal rightExp = analyseExpression();
-            if (rightExp.type != retType) {
-                throw new AnalyzeError(ErrorCode.TypeUnmatch, curPos);
-            }
+            // TODO:先不检查了
+//            if (rightExp.type != retType) {
+//                throw new AnalyzeError(ErrorCode.TypeUnmatch, curPos);
+//            }
             // TODO:int返回类型的函数 返回路径检查
             addFuncIns(curFunc.getName(), new Instruction(Operation.arga, (int) 0));
             addFuncIns(curFunc.getName(), new Instruction(Operation.push, rightExp.value));
@@ -725,6 +731,7 @@ public final class Analyser {
         while (!check(TokenType.R_BRACE))
             analyseStatement();
         expect(TokenType.R_BRACE);
+        System.out.println();
         popNestedBlock();
     }
 
@@ -883,10 +890,13 @@ public final class Analyser {
                 if (nameToken.getType() != rightExp.type)
                     throw new AnalyzeError(ErrorCode.TypeUnmatch, nameToken.getEndPos());
                 getCurFunc().addInstruction(new Instruction(Operation.store64));
-                return new ExpVal(Ty.UINT, 1);
+                return new ExpVal(Ty.VOID, 1);
             } else {
                 // 只是一个变量
                 getCurFunc().addInstruction(new Instruction(Operation.load64));
+                // TODO:假设变量都是int类型的
+                SymbolEntry s = getSymbol(symbolTable, nameToken.getValueString());
+//                return new ExpVal(s.getType(), nameToken.getValue());
                 return new ExpVal(nameToken.getType(), nameToken.getValue());
             }
         } else if (check(TokenType.UINT_LITERAL)) {
