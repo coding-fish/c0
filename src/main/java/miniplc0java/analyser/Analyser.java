@@ -572,8 +572,6 @@ public final class Analyser {
             analyseBlockStmt();
             // 退出该嵌套层次，回到上一层
             popNestedBlock();
-            for (SymbolEntry s : symbolTable)
-            System.out.println(s.getName()+" "+s.getDepth());
 //            System.out.println("func:"+getCurFunc().getName()+"\tfinished.");
         }
     }
