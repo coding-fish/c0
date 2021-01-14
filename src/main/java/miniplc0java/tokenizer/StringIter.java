@@ -41,7 +41,9 @@ public class StringIter {
             return;
         }
         while (scanner.hasNext()) {
-            linesBuffer.add(scanner.nextLine() + '\n');
+            String s = scanner.nextLine();
+            System.out.println(s);
+            linesBuffer.add(s + '\n');
         }
         // todo:check read \n?
         initialized = true;
@@ -58,6 +60,7 @@ public class StringIter {
     // previousPos() = (0, 8)
     // nextChar() = '\n' 并且指针移动到 (1, 0)
     // peekChar() = '\n' 并且指针不移动
+
     /**
      * 获取下一个字符的位置
      */
