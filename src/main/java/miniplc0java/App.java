@@ -117,23 +117,28 @@ public class App {
 //            System.out.println("输出全局表");
             output.print(Instruction.addGlob());
             // pass
-//            for (Token t : Instruction.globalVarTable)
-//            {
-//                if (Analyser.getSymbol(Instruction.symbolTable, t.getValueString())!=null)
-//                    System.out.println(t.getValueString()+" "+Analyser.getSymbol(Instruction.symbolTable, t.getValueString()).getType());
-//                else
-//                    System.out.println(t.getValueString()+" "+"STRING");
-//            }
+            boolean debug = false;
+            if (debug)
+                for (Token t : Instruction.globalVarTable)
+                {
+                    if (Analyser.getSymbol(Instruction.symbolTable, t.getValueString())!=null)
+                        System.out.println(t.getValueString()+" "+Analyser.getSymbol(Instruction.symbolTable, t.getValueString()).getType());
+                    else
+                        System.out.println(t.getValueString()+" "+"STRING");
+                }
 //            System.out.println("输出函数指令");
             // pass
 //            for (Function f : Instruction.funcTable) {
 //                System.out.println(f.getReturnType());
 //            }
             output.print(Instruction.addFunc());
-            for (Function f : Instruction.funcTable) {
-                System.out.println("[Function "+f.offset+"]"+f.getName());
-                for (Instruction i : f.instructions)
-                    ;//System.out.println(i.debug());
+            if (debug)
+            {
+                for (Function f : Instruction.funcTable) {
+                    System.out.println("[Function "+f.offset+"]"+f.getName());
+                    for (Instruction i : f.instructions)
+                        System.out.println(i.debug());
+                }
             }
         } else {
             System.err.println("Please specify either '--analyse' or '--tokenize'.");

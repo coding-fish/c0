@@ -56,7 +56,11 @@ public class Token {
                 || value instanceof Character || value instanceof Double) {
             return value.toString();
         }
-        throw new Error("[Class Token]No suitable cast for token value.");
+        else
+        {
+            return value.toString();
+            //throw new Error("[Class Token]No suitable cast for token value.");
+        }
     }
 
     public TokenType getTokenType() {

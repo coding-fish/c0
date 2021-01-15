@@ -354,6 +354,8 @@ public final class Analyser {
 //        }
 //    }
 
+    boolean isCondExpr;// 如歌表达式位于判断条件，要加一个跳转指令
+
     /**
      * 获取变量是否是常量
      *
@@ -381,7 +383,7 @@ public final class Analyser {
     }
 
     private int calcGlobOffset() {
-        return this.globalVarTable.size();
+        return this.globalVarTable.size()-1;
     }
 
     /**
@@ -447,7 +449,8 @@ public final class Analyser {
                 throw new AnalyzeError(ErrorCode.VarTypeVoid, curPos);
             addSymbol(name, type, false, false, curPos);
             // 等于号
-            if (nextIf(TokenType.EQ) != null) {
+            if (nextIf(TokenType.ASSIGN) != null) {
+                locateVar(name, curPos);
                 // 表达式(带类型，可能发生类型转换)
                 ExpVal rightExp = analyseExpression();
                 if (rightExp.type != type) {
@@ -455,6 +458,8 @@ public final class Analyser {
                 }
                 Object value = rightExp.value;
                 declareSymbol(name, curPos, value);
+                // 赋值
+                getCurFunc().addInstruction(new Instruction(Operation.store64));
                 // 添加到全局表
 //                if (this.currentDepth == 0)
 //                    addGlobVar(new Token(TokenType.UINT_LITERAL, rightExp.value));
@@ -489,8 +494,10 @@ public final class Analyser {
             if (type == Ty.VOID)
                 throw new AnalyzeError(ErrorCode.VarTypeVoid, curPos);
             addSymbol(name, type, true, true, curPos);
+            // 定位，便于赋值
+            locateVar(name, curPos);
             // 等于号,const类型必须赋值
-            expect(TokenType.EQ);
+            expect(TokenType.ASSIGN);
             // 表达式(带类型，可能发生类型转换)
             ExpVal rightExp = analyseExpression();
             if (rightExp.type != type) {
@@ -501,6 +508,8 @@ public final class Analyser {
             // 添加到全局表
 //            if (this.currentDepth == 0)
 //                addGlobVar(new Token(TokenType.UINT_LITERAL, rightExp.value));
+            // 赋值
+            getCurFunc().addInstruction(new Instruction(Operation.store64));
             // 分号
             expect(TokenType.SEMICOLON);
         }
@@ -531,10 +540,14 @@ public final class Analyser {
             Function newFunc = new Function(name, globalVarTable.size() - 1, funcTable.size());
             // 但函数可以调用自己，因此在分析函数体之前，应当已经加入列表了
             this.funcTable.add(newFunc);
-            // 参数与局部变量都属于下一层
+            // 参数与局部变量都属于下一层======================================
             pushNestedBlock();
             // 左括号
             expect(TokenType.L_PAREN);
+            // 由于返回值要在参数之前压栈，但一开始不知道返回类型，所以先假设为int
+            locs++;// 这个算无名变量
+            addSymbol("LoCc" + locs, Ty.UINT, false, false, curPos);
+            int retArg = symbolTable.size()-1;
             // 参数列表，可以为空
             while (check(TokenType.IDENT) || check(TokenType.CONST_KW)) {
                 boolean isConst = false;
@@ -569,17 +582,26 @@ public final class Analyser {
             Token typeToken = expect(TokenType.IDENT);
             Ty type = typeToken.getType();
             setFuncType(name, type);
-            // 将返回值算作参数
-            if (type != Ty.VOID) {
-                locs++;// 这个算无名变量
-                addSymbol("LoCc" + locs, Ty.UINT, false, false, curPos);
+            // 不需要返回值，再从符号表删掉
+            if (type == Ty.VOID) {
+                for (int i = retArg; i < symbolTable.size()-1; i++)
+                {
+                    symbolTable.set(i, symbolTable.get(i+1));
+                }
+                symbolTable.pop();
             }
             // 函数体，可能有return语句（需要检查类型）
             // 进入时记得增加嵌套层次
             // TODO:局部变量在哪存
             analyseBlockStmt();
             // 退出该嵌套层次，回到上一层
+//            for (SymbolEntry s : symbolTable){
+//                System.out.print(s.getName()+" ");
+//            }
+//            System.out.println();
+            // 记得弹出和压入是成对操作======================================
             popNestedBlock();
+            // pass
 //            System.out.println("func:"+getCurFunc().getName()+"\tfinished.");
         }
     }
@@ -645,25 +667,30 @@ public final class Analyser {
      */
     private void analyseIfStmt() throws CompileError {
         expect(TokenType.IF_KW);
+        // 判断条件
+        isCondExpr = true;
         analyseExpression();
+        isCondExpr = false;
         // 先占位
-        getCurFunc().addInstruction(new Instruction(Operation.br, 0));
-        int loc1 = this.funcTable.size() - 1;
+        getCurFunc().addInstruction(new Instruction(Operation.br, 111));
+        int loc1 = getCurFunc().instructions.size() - 1;
         analyseBlockStmt();
         // 先占位
-        getCurFunc().addInstruction(new Instruction(Operation.br, 0));
-        int loc2 = this.funcTable.size() - 1;
+        getCurFunc().addInstruction(new Instruction(Operation.br, 222));
+        int loc2 = getCurFunc().instructions.size() - 1;
         // 回填
         getCurFunc().instructions.set(loc1, new Instruction(Operation.br, loc2 - loc1));
-        expect(TokenType.ELSE_KW);
-        if (check(TokenType.IF_KW)) {
-            // 存在嵌套
-            analyseIfStmt();
-        } else
-            analyseBlockStmt();
+        if (nextIf(TokenType.ELSE_KW) != null)// Else是可选的
+        {
+            if (check(TokenType.IF_KW)) {
+                // 存在嵌套
+                analyseIfStmt();
+            } else
+                analyseBlockStmt();
+        }
         // 这个占位似乎可以省略
 //        getCurFunc().addInstruction(new Instruction(Operation.br, 0));
-        int loc3 = this.funcTable.size() - 1;
+        int loc3 = getCurFunc().instructions.size() - 1;
         // 回填
         // 此时控制跳到else块之后，需保证仍然有语句，比如显式的Ret
         getCurFunc().instructions.set(loc2, new Instruction(Operation.br, loc3 - loc2));
@@ -682,13 +709,16 @@ public final class Analyser {
         expect(TokenType.WHILE_KW);
         // 占位
         getCurFunc().addInstruction(new Instruction(Operation.br, 0));
-        int loc1 = this.funcTable.size() - 1;
+        int loc1 = getCurFunc().instructions.size() - 1;
+        // 判断条件
+        isCondExpr = true;
         analyseExpression();
+        isCondExpr = false;
         // 占位
         getCurFunc().addInstruction(new Instruction(Operation.br, 0));
-        int loc2 = this.funcTable.size() - 1;
+        int loc2 = getCurFunc().instructions.size() - 1;
         analyseBlockStmt();
-        int loc3 = this.funcTable.size() - 1;
+        int loc3 = getCurFunc().instructions.size() - 1;
         loc3++;
         getCurFunc().addInstruction(new Instruction(Operation.br, loc1 - loc3));
         // 回填
@@ -739,7 +769,6 @@ public final class Analyser {
         while (!check(TokenType.R_BRACE))
             analyseStatement();
         expect(TokenType.R_BRACE);
-        System.out.println();
         popNestedBlock();
     }
 
@@ -754,7 +783,8 @@ public final class Analyser {
      */
     private ExpVal analyseExpression() throws CompileError {
         Function curFunc = getCurFunc();
-        ExpVal expval = analyseC();
+        ExpVal expval = analyseC();// 第一项
+        boolean isSingleCond = true;// 在判断条件中时，表示这只有一项，需要加brtrue指令
         while (true) {
             var op = peek();
             if (op.getTokenType() != TokenType.EQ &&
@@ -765,6 +795,7 @@ public final class Analyser {
                     op.getTokenType() != TokenType.GE) {
                 break;
             }
+            isSingleCond = false;
             // 运算符
             next();
             analyseC();
@@ -794,6 +825,11 @@ public final class Analyser {
             } else
                 ;// do nothing
         }
+        if (isCondExpr && isSingleCond)
+        {
+            addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
+        }
+
         return expval;
     }
 
@@ -1003,7 +1039,7 @@ public final class Analyser {
     // TODO:fetal bug!!!
     private ExpVal locateVar(String name, Pos curPos) throws CompileError {
         // 查找顺序：局部变量->参数列表（注意这一层还有函数名）->全局变量
-        // 对应深度：   0   ->            1                ->  >1的值
+        // 对应深度：   >1  ->            1                ->  0
         SymbolEntry s = null;
         int i = symbolTable.size() - 1;
         for (; i >= 0; i--) {
@@ -1025,14 +1061,20 @@ public final class Analyser {
                     if (symbolTable.get(i).getName().equals(getCurFunc().getName()))
                         break;
                 }
-                offset = offset - i;
+                offset = offset - i - 1;
+                if (getCurFunc().getReturnType() != Ty.VOID)
+                    ;//offset += 1;// 此时Arg[0]放函数返回值
                 getCurFunc().addInstruction(new Instruction(Operation.arga, offset));
             } else {
                 for (; i >= 0; i--) {
-                    if (symbolTable.get(i).getDepth() == 1)
+                    if (symbolTable.get(i).getDepth() <= 1)
                         break;
                 }
-                offset = offset - i;
+//                for (int j = i+1; j <= offset;j++)
+//                    System.out.println(symbolTable.get(j).getName()+" "+symbolTable.get(j).getDepth());
+//                System.out.println();
+                offset = offset - i - 1;// 从0开始数
+
                 getCurFunc().addInstruction(new Instruction(Operation.loca, offset));
             }
             return new ExpVal(s.getType(), offset);

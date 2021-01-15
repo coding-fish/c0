@@ -45,7 +45,7 @@ public class Tokenizer {
                 skipComment();
                 return nextToken();
             } else {
-                throw new TokenizeError(ErrorCode.InvalidInput, it.previousPos());
+                return new Token(TokenType.DIV, '/', it.currentPos(), it.currentPos());// 是除号诶！
             }
         } else {
             return lexOperatorOrUnknown();
@@ -123,31 +123,39 @@ public class Tokenizer {
         Pos startPos = it.currentPos();
         it.nextChar();
         while (!it.isEOF() && (it.peekChar() != '\"')) {
+            // 转移字符按俩字符原样输出即可,如\n仍输出\n
+//            System.out.println(Integer.valueOf(it.peekChar()).intValue());
             if (it.peekChar() == '\\') {
                 it.nextChar();
                 switch (it.peekChar()) {
                     case '\\': {
                         strLiteral.append('\\');
+                        strLiteral.append('\\');
                         break;
                     }
                     case '\"': {
+                        strLiteral.append('\\');
                         strLiteral.append('\"');
                         break;
                     }
                     case '\'': {
+                        strLiteral.append('\\');
                         strLiteral.append('\'');
                         break;
                     }
                     case 'n': {
-                        strLiteral.append('\n');
+                        strLiteral.append('\\');
+                        strLiteral.append('n');
                         break;
                     }
                     case 'r': {
-                        strLiteral.append('\r');
+                        strLiteral.append('\\');
+                        strLiteral.append('r');
                         break;
                     }
                     case 't': {
-                        strLiteral.append('\t');
+                        strLiteral.append('\\');
+                        strLiteral.append('t');
                         break;
                     }
                     default:

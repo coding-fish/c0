@@ -305,6 +305,7 @@ public class Instruction {
                 char[] ch = string.toCharArray();// 转ascii
                 for (int i = 0; i < ch.length; i++) {
                     ret += getString(getIntBytes(Integer.valueOf(ch[i]).intValue()));
+//                    System.out.print(Integer.toHexString(Integer.valueOf(ch[i]).intValue())+" ");
                 }// value
             }
         }
