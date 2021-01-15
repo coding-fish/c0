@@ -55,11 +55,13 @@ public final class Analyser {
     // 因此调用库函数之前，需要单独检查是否满足调用条件
     ArrayList<Function> funcTable = new ArrayList<Function>();
 
+    int locs = 0;
+
     private int calcFuncOffset(String name, Pos curPos) throws CompileError {
         int i = 0;
         for (Function f : funcTable) {
             if (f.getName().equals(name))
-                return i + 1;
+                return i;
             i++;
         }
         throw new AnalyzeError(ErrorCode.NotDeclared, curPos);
@@ -280,8 +282,7 @@ public final class Analyser {
             // 全局变量不需要赋初值，在_start里面用赋值语句完成
             if (currentDepth == 0) {
                 // int OR double OR function(void)
-                Token var = new Token(Token.tyToTokenType(type), name);
-                addGlobVar(var);
+                addGlobVar(new Token(Token.tyToTokenType(type), name));
             }
         }
     }
@@ -414,10 +415,12 @@ public final class Analyser {
         }
         // 把字符串_start放在全局表最后
         addGlobVar(new Token(TokenType.STRING_LITERAL, "_start"));
+        getFunc(funcTable, "_start").offset = globalVarTable.size() - 1;
         // 调用main
         Pos curPos = nextIf(TokenType.EOF).getEndPos();
         // 找不到main会报错
         int offset = calcFuncOffset("main", curPos);
+        this.funcTable.get(0).addInstruction(new Instruction(Operation.stackalloc, 0));
         this.funcTable.get(0).addInstruction(new Instruction(Operation.call, offset));
 //        System.out.println("Analysed finished.");
     }
@@ -525,7 +528,7 @@ public final class Analyser {
 //                throw new AnalyzeError(ErrorCode.DuplicateDeclaration, curPos);
             // new一个函数类，存放相关信息，为了便于被调用，放到单独的函数列表中
             // 注意:这个偏移量是全局符号表里的
-            Function newFunc = new Function(name, globalVarTable.size(), funcTable.size());
+            Function newFunc = new Function(name, globalVarTable.size() - 1, funcTable.size());
             // 但函数可以调用自己，因此在分析函数体之前，应当已经加入列表了
             this.funcTable.add(newFunc);
             // 参数与局部变量都属于下一层
@@ -566,6 +569,11 @@ public final class Analyser {
             Token typeToken = expect(TokenType.IDENT);
             Ty type = typeToken.getType();
             setFuncType(name, type);
+            // 将返回值算作参数
+            if (type != Ty.VOID) {
+                locs++;// 这个算无名变量
+                addSymbol("LoCc" + locs, Ty.UINT, false, false, curPos);
+            }
             // 函数体，可能有return语句（需要检查类型）
             // 进入时记得增加嵌套层次
             // TODO:局部变量在哪存
@@ -674,18 +682,18 @@ public final class Analyser {
         expect(TokenType.WHILE_KW);
         // 占位
         getCurFunc().addInstruction(new Instruction(Operation.br, 0));
-        int loc1 = this.funcTable.size()-1;
+        int loc1 = this.funcTable.size() - 1;
         analyseExpression();
         // 占位
         getCurFunc().addInstruction(new Instruction(Operation.br, 0));
-        int loc2 = this.funcTable.size()-1;
+        int loc2 = this.funcTable.size() - 1;
         analyseBlockStmt();
-        int loc3 = this.funcTable.size()-1;
+        int loc3 = this.funcTable.size() - 1;
         loc3++;
-        getCurFunc().addInstruction(new Instruction(Operation.br, loc1-loc3));
+        getCurFunc().addInstruction(new Instruction(Operation.br, loc1 - loc3));
         // 回填
         // 同样也应确保后面还有指令，这与返回路径检查挂钩(while块是函数最后语句的情况)
-        getCurFunc().instructions.set(loc2, new Instruction(Operation.br, loc3-loc2));
+        getCurFunc().instructions.set(loc2, new Instruction(Operation.br, loc3 - loc2));
     }
 
     /**
@@ -703,14 +711,16 @@ public final class Analyser {
             addFuncIns(curFunc.getName(), new Instruction(Operation.ret));
         } else {
             // 有返回类型的必须有返回值，还要类型一致
-            ExpVal rightExp = analyseExpression();
-            // TODO:先不检查了
-//            if (rightExp.type != retType) {
-//                throw new AnalyzeError(ErrorCode.TypeUnmatch, curPos);
-//            }
-            // TODO:int返回类型的函数 返回路径检查
             addFuncIns(curFunc.getName(), new Instruction(Operation.arga, (int) 0));
-            addFuncIns(curFunc.getName(), new Instruction(Operation.push, rightExp.value));
+            ExpVal rightExp = analyseExpression();
+            if (rightExp.type == Ty.VOID)
+                throw new AnalyzeError(ErrorCode.NoReturnValue, curPos);
+            // 返回类型是否匹配
+            if (rightExp.type != retType) {
+                throw new AnalyzeError(ErrorCode.TypeUnmatch, curPos);
+            }
+            // TODO:int返回类型的函数 返回路径检查
+//            addFuncIns(curFunc.getName(), new Instruction(Operation.push, rightExp.value));
             addFuncIns(curFunc.getName(), new Instruction(Operation.store64));
             addFuncIns(curFunc.getName(), new Instruction(Operation.ret));
         }
@@ -869,10 +879,10 @@ public final class Analyser {
             Token nameToken = expect(TokenType.IDENT);
             curPos = nameToken.getEndPos();
             locateVar(nameToken.getValueString(), curPos);
-            if (check(TokenType.L_PAREN))
+            if (check(TokenType.L_PAREN)) {
                 // 是函数调用
                 return analyseCallExpr(nameToken.getValueString(), curPos);
-            else if (check(TokenType.ASSIGN)) {
+            } else if (check(TokenType.ASSIGN)) {
                 // 注意类型比较
                 if (nameToken.getType() == Ty.VOID)
                     throw new AnalyzeError(ErrorCode.InvalidAssignment, nameToken.getEndPos());
@@ -885,17 +895,23 @@ public final class Analyser {
                 expect(TokenType.ASSIGN);
                 // 赋值表达式右半部
                 ExpVal rightExp = analyseExpression();
-                if (nameToken.getType() != rightExp.type)
+                Ty leftType = getSymbol(symbolTable, nameToken.getValueString()).getType();
+                if (leftType != rightExp.type) {
+                    // TODO:赋值号两侧类型检查
+                    System.out.println(leftType + " unmatch " + rightExp.type);
                     throw new AnalyzeError(ErrorCode.TypeUnmatch, nameToken.getEndPos());
+                }
+
                 getCurFunc().addInstruction(new Instruction(Operation.store64));
                 return new ExpVal(Ty.VOID, 1);
             } else {
                 // 只是一个变量
                 getCurFunc().addInstruction(new Instruction(Operation.load64));
-                // TODO:假设变量都是int类型的
+
                 SymbolEntry s = getSymbol(symbolTable, nameToken.getValueString());
 //                return new ExpVal(s.getType(), nameToken.getValue());
-                return new ExpVal(nameToken.getType(), nameToken.getValue());
+                // TODO:假设变量都是int类型的
+                return new ExpVal(Ty.UINT, nameToken.getValue());
             }
         } else if (check(TokenType.UINT_LITERAL)) {
             Token numToken = expect(TokenType.UINT_LITERAL);
@@ -920,8 +936,8 @@ public final class Analyser {
             expect(TokenType.R_PAREN);
             return ret;
         } else
-            // TODO:throw error?
-            return new ExpVal(Ty.UINT, 0);
+            // 说明是空的
+            return new ExpVal(Ty.VOID, 0);
     }
 
     // call_expr -> IDENT '(' call_param_list? ')'
@@ -968,17 +984,23 @@ public final class Analyser {
             // 在全局表里，不妨把函数名看做字符串
             // 库函数每次压一个进去，index就是表里最后面的那个
             getCurFunc().addInstruction(new Instruction(Operation.callname, globalVarTable.size() - 1));
+            if (funcName.equals("getint") || funcName.equals("getdouble") || funcName.equals("getchar"))
+                return new ExpVal(Ty.UINT, 1);
+            else
+                return new ExpVal(Ty.VOID, 1);
         }
         // 自定义函数
-        else
+        else {
             // FIXME:其实Function的属性offset已经记录了位置
             getCurFunc().addInstruction(new Instruction(Operation.call, calcFuncOffset(funcName, curPos)));
-        return new ExpVal(getCurFunc().getReturnType(), 1);
+            return new ExpVal(getFunc(this.funcTable, funcName).getReturnType(), 1);
+        }
     }
 
     // 找到变量在局部符号表，或全局符号表中的偏移
     // 还应有类型检查,交由上一层完成，所以把type返回
     // 添加定位指令
+    // TODO:fetal bug!!!
     private ExpVal locateVar(String name, Pos curPos) throws CompileError {
         // 查找顺序：局部变量->参数列表（注意这一层还有函数名）->全局变量
         // 对应深度：   0   ->            1                ->  >1的值
@@ -991,23 +1013,26 @@ public final class Analyser {
         }
         if (s != null) {
             // 计算实际的偏移量
-            int offset = 0;
+            // 如果函数有返回值，Args(0)是返回值，否则从0算起
+            int offset = i;
             if (s.getDepth() == 0) {
                 offset = i;
-                getCurFunc().addInstruction(new Instruction(Operation.globa, offset));
+                // 如果是变量而不是函数，访问要取值
+                if (i != -1)
+                    getCurFunc().addInstruction(new Instruction(Operation.globa, offset));
             } else if (s.getDepth() == 1) {
                 for (; i >= 0; i--) {
                     if (symbolTable.get(i).getName().equals(getCurFunc().getName()))
                         break;
                 }
-                offset = s.getDepth() - i - 1;
+                offset = offset - i;
                 getCurFunc().addInstruction(new Instruction(Operation.arga, offset));
             } else {
                 for (; i >= 0; i--) {
                     if (symbolTable.get(i).getDepth() == 1)
                         break;
                 }
-                offset = s.getDepth() - i - 1;
+                offset = offset - i;
                 getCurFunc().addInstruction(new Instruction(Operation.loca, offset));
             }
             return new ExpVal(s.getType(), offset);

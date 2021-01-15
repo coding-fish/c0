@@ -32,7 +32,7 @@ public class Instruction {
         this.opt = opt;
         if (num instanceof Integer)
             this.x = (int) num;
-        else if (num instanceof Double)// TODO:似乎，没有这个类型的操作数?
+        else if (num instanceof Double)// TODO:// 似乎，没有这个类型的操作数?
             this.y = (double) num;
 //        else
 //            this.x = (int) num;
@@ -140,6 +140,10 @@ public class Instruction {
 
     public void setX(Integer x) {
         this.x = x;
+    }
+
+    public String debug() {
+        return this.opt.name()+" "+this.x+" "+this.y;
     }
 
     @Override
@@ -283,8 +287,8 @@ public class Instruction {
         String ret = new String();
         ret += getString(getIntBytes(globalVarTable.size()));// glob.count
         for (Token t : globalVarTable) {
-            if (t.getType() == Ty.UINT) {
-                SymbolEntry s = Analyser.getSymbol(Analyser.symbolTable, t.getValueString());
+            SymbolEntry s = Analyser.getSymbol(symbolTable, t.getValueString());
+            if ((s != null) && (s.getType() == Ty.UINT)) {
                 if (s.isConstant())
                     ret += getString(getByteBytes(1));
                 else
@@ -293,7 +297,7 @@ public class Instruction {
                 ret += getString(getIntBytes(8));
                 // 初始值为0
                 ret += getString(getLongBytes(0));
-            } else//字符串
+            } else//字符串 或 函数名
             {
                 ret += getString(getByteBytes(1));// is_const
                 ret += getString(getIntBytes(t.getValueString().length()));// count

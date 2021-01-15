@@ -85,7 +85,7 @@ public class Tokenizer {
     private Token lexIdentOrKeyword() throws TokenizeError {
         StringBuilder ident = new StringBuilder();
         Pos startPos = it.currentPos();
-        // 先假设Character.isAlphabetic()不能识别下划线
+        // 假设Character.isAlphabetic()不能识别下划线
         while (!it.isEOF() &&
                 (Character.isDigit(it.peekChar()) || Character.isLetter(it.peekChar())
                         || it.peekChar() == '_')) {
@@ -224,9 +224,9 @@ public class Tokenizer {
             case '=': {
                 if (it.peekChar() == '=') {
                     it.nextChar();
-                    return new Token(TokenType.ASSIGN, "==", startPos, it.currentPos());
+                    return new Token(TokenType.EQ, "==", startPos, it.currentPos());
                 } else
-                    return new Token(TokenType.EQ, '=', startPos, it.currentPos());
+                    return new Token(TokenType.ASSIGN, '=', startPos, it.currentPos());
             }
             case '!': {
                 if (it.peekChar() == '=') {

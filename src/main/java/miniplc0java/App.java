@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Scanner;
 
 import miniplc0java.analyser.Analyser;
+import miniplc0java.analyser.Function;
+import miniplc0java.analyser.SymbolEntry;
 import miniplc0java.error.CompileError;
 import miniplc0java.instruction.Instruction;
 import miniplc0java.tokenizer.StringIter;
@@ -114,11 +116,25 @@ public class App {
             // 全局表
 //            System.out.println("输出全局表");
             output.print(Instruction.addGlob());
-            for (Token t : Instruction.globalVarTable) {
-                System.out.println(t.getValueString());
-            }
+            // pass
+//            for (Token t : Instruction.globalVarTable)
+//            {
+//                if (Analyser.getSymbol(Instruction.symbolTable, t.getValueString())!=null)
+//                    System.out.println(t.getValueString()+" "+Analyser.getSymbol(Instruction.symbolTable, t.getValueString()).getType());
+//                else
+//                    System.out.println(t.getValueString()+" "+"STRING");
+//            }
 //            System.out.println("输出函数指令");
+            // pass
+//            for (Function f : Instruction.funcTable) {
+//                System.out.println(f.getReturnType());
+//            }
             output.print(Instruction.addFunc());
+            for (Function f : Instruction.funcTable) {
+                System.out.println("[Function "+f.offset+"]"+f.getName());
+                for (Instruction i : f.instructions)
+                    ;//System.out.println(i.debug());
+            }
         } else {
             System.err.println("Please specify either '--analyse' or '--tokenize'.");
             System.exit(3);
