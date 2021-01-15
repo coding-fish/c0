@@ -601,6 +601,9 @@ public final class Analyser {
 //            System.out.println();
             // 记得弹出和压入是成对操作======================================
             popNestedBlock();
+            // 保险期间，再返回一次
+            if (getFunc(funcTable, getCurFunc().getName()).getReturnType() == Ty.VOID)
+                getCurFunc().addInstruction(new Instruction(Operation.ret));
             // pass
 //            System.out.println("func:"+getCurFunc().getName()+"\tfinished.");
         }
@@ -672,11 +675,11 @@ public final class Analyser {
         analyseExpression();
         isCondExpr = false;
         // 先占位
-        getCurFunc().addInstruction(new Instruction(Operation.br, 111));
+        getCurFunc().addInstruction(new Instruction(Operation.br, 0));
         int loc1 = getCurFunc().instructions.size() - 1;
         analyseBlockStmt();
         // 先占位
-        getCurFunc().addInstruction(new Instruction(Operation.br, 222));
+        getCurFunc().addInstruction(new Instruction(Operation.br, 0));
         int loc2 = getCurFunc().instructions.size() - 1;
         // 回填
         getCurFunc().instructions.set(loc1, new Instruction(Operation.br, loc2 - loc1));
