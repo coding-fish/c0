@@ -143,7 +143,7 @@ public class Instruction {
     }
 
     public String debug() {
-        return this.opt.name()+" "+this.x+" "+this.y;
+        return this.opt.name() + " " + this.x + " " + this.y;
     }
 
     @Override
@@ -303,8 +303,9 @@ public class Instruction {
                 ret += getString(getIntBytes(t.getValueString().length()));// count
                 String string = t.getValueString();
                 char[] ch = string.toCharArray();// 转ascii
+//                System.out.println("字符串长度为"+ch.length);
                 for (int i = 0; i < ch.length; i++) {
-                    ret += getString(getIntBytes(Integer.valueOf(ch[i]).intValue()));
+                    ret += getString(getByteBytes(Integer.valueOf(ch[i]).byteValue()));
 //                    System.out.print(Integer.toHexString(Integer.valueOf(ch[i]).intValue())+" ");
                 }// value
             }

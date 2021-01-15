@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Scanner;
 
+import miniplc0java.instruction.Instruction;
 import miniplc0java.util.Pos;
 
 /**

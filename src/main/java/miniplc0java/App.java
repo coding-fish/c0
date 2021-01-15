@@ -117,7 +117,7 @@ public class App {
 //            System.out.println("输出全局表");
             output.print(Instruction.addGlob());
             // pass
-            boolean debug = true;
+            boolean debug = false;
             if (debug)
                 for (Token t : Instruction.globalVarTable)
                 {
