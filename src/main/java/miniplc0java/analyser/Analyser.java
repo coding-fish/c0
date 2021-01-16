@@ -967,7 +967,7 @@ public final class Analyser {
             return new ExpVal(Ty.STRING, 1);
         } else if (check(TokenType.CHAR_LITERAL)) {
             Token charToken = expect(TokenType.CHAR_LITERAL);
-            getCurFunc().addInstruction(new Instruction(Operation.push, (int) charToken.getValueString().charAt(0)));
+            getCurFunc().addInstruction(new Instruction(Operation.push, charToken.getValue()));
             return new ExpVal(Ty.UINT, charToken.getValue());
         } else if (check(TokenType.L_PAREN)) {
             expect(TokenType.L_PAREN);

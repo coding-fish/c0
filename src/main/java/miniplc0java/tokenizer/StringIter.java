@@ -44,7 +44,7 @@ public class StringIter {
         while (scanner.hasNext()) {
             String s = scanner.nextLine();
             // hack 数据
-            System.out.println(s);
+//            System.out.println(s);
             linesBuffer.add(s + '\n');
         }
         // todo:check read \n?

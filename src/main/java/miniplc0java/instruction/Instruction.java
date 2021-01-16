@@ -19,6 +19,7 @@ public class Instruction {
     private Operation opt;//u8
     int x;  //u32 i32
     double y; //u64 i64
+    long z;
 
     // 没有操作数
     public Instruction(Operation opt) {
@@ -30,9 +31,10 @@ public class Instruction {
     // 一个操作数
     public Instruction(Operation opt, Object num) {
         this.opt = opt;
-        if (num instanceof Integer)
+        if (num instanceof Integer) {
             this.x = (int) num;
-        else if (num instanceof Double)// TODO:// 似乎，没有这个类型的操作数?
+            this.z = Long.valueOf(this.x);
+        } else if (num instanceof Double)// TODO:// 似乎，没有这个类型的操作数?
             this.y = (double) num;
 //        else
 //            this.x = (int) num;
@@ -143,7 +145,7 @@ public class Instruction {
     }
 
     public String debug() {
-        return this.opt.name() + " " + this.x + " " + this.y;
+        return this.opt.name() + " " + this.x;
     }
 
     @Override
@@ -152,7 +154,8 @@ public class Instruction {
             case nop:
                 return getString(getByteBytes(0x00));
             case push:
-                return getString(getByteBytes(0x01)) + getString(getDoubleBytes(this.y));
+                // FIXME:push的操作数是u64类型
+                return getString(getByteBytes(0x01)) + getString(getLongBytes(this.z));
             case pop:
                 return getString(getByteBytes(0x02));
             case popn:
