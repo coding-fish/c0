@@ -684,6 +684,7 @@ public final class Analyser {
         expect(TokenType.IF_KW);
         // 判断条件
         isCondExpr = true;
+        isSingleCond = true;
         analyseExpression();
         isCondExpr = false;
         // 先占位
@@ -728,6 +729,7 @@ public final class Analyser {
         int loc1 = getCurFunc().instructions.size() - 1;
         // 判断条件
         isCondExpr = true;
+        isSingleCond = true;
         analyseExpression();
         isCondExpr = false;
         // 占位
@@ -993,7 +995,7 @@ public final class Analyser {
         } else {
             // 说明是空的
             if (!isSingleCond)
-                isCondExpr = true;
+                isSingleCond = true;
             return new ExpVal(Ty.VOID, 0);
         }
     }
