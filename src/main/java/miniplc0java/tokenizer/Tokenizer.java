@@ -129,33 +129,33 @@ public class Tokenizer {
                 it.nextChar();
                 switch (it.peekChar()) {
                     case '\\': {
-                        strLiteral.append('\\');
+//                        strLiteral.append('\\');
                         strLiteral.append('\\');
                         break;
                     }
                     case '\"': {
-                        strLiteral.append('\\');
+//                        strLiteral.append('\\');
                         strLiteral.append('\"');
                         break;
                     }
                     case '\'': {
-                        strLiteral.append('\\');
+//                        strLiteral.append('\\');
                         strLiteral.append('\'');
                         break;
                     }
                     case 'n': {
-                        strLiteral.append('\\');
-                        strLiteral.append('n');
+//                        strLiteral.append('\\');
+                        strLiteral.append('\n');
                         break;
                     }
                     case 'r': {
-                        strLiteral.append('\\');
-                        strLiteral.append('r');
+//                        strLiteral.append('\\');
+                        strLiteral.append('\r');
                         break;
                     }
                     case 't': {
-                        strLiteral.append('\\');
-                        strLiteral.append('t');
+//                        strLiteral.append('\\');
+                        strLiteral.append('\t');
                         break;
                     }
                     default:

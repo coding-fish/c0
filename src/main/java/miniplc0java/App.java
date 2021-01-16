@@ -1,11 +1,6 @@
 package miniplc0java;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -28,7 +23,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class App {
-    public static void main(String[] args) throws CompileError {
+    public static void main(String[] args) throws CompileError, IOException {
         var argparse = buildArgparse();
         Namespace result;
         try {
@@ -112,10 +107,10 @@ public class App {
             }
             // 标准头magic + version
 //            System.out.println("输出标准头");
-            output.print(Instruction.addHead());
+            output.write(Instruction.addHead());
             // 全局表
 //            System.out.println("输出全局表");
-            output.print(Instruction.addGlob());
+            output.write(Instruction.addGlob());
             // pass
             boolean debug = false;
             if (debug)
@@ -131,11 +126,11 @@ public class App {
 //            for (Function f : Instruction.funcTable) {
 //                System.out.println(f.getReturnType());
 //            }
-            output.print(Instruction.addFunc());
+            output.write(Instruction.addFunc());
             if (debug)
             {
                 for (Function f : Instruction.funcTable) {
-                    System.out.println("[Function "+f.offset+"]"+f.getName());
+                    System.out.println("[Function "+f.offset+"]"+f.getName()+" "+f.localCount+"loc");
                     for (Instruction i : f.instructions)
                         System.out.println(i.debug());
                 }

@@ -7,12 +7,10 @@ import miniplc0java.error.CompileError;
 import miniplc0java.tokenizer.Token;
 import miniplc0java.util.Ty;
 
-import java.util.ArrayList;
-import java.util.Objects;
+import java.util.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import java.util.Stack;
 import java.util.logging.Logger;
 
 public class Instruction {
@@ -47,13 +45,16 @@ public class Instruction {
         this.y = 0;
     }
 
-    public static byte[] getByteBytes(int op) {
+    public static ArrayList<Byte> getByteBytes(int op) {
         byte opb = (byte) op;
         ByteBuffer buffer = ByteBuffer.allocate(1);
         buffer.order(ByteOrder.BIG_ENDIAN);
         buffer.put(opb);
         byte[] bytes = buffer.array();
-        return bytes;
+        ArrayList<Byte> ret = new ArrayList<Byte>();
+        for (byte b : bytes)
+            ret.add(b);
+        return ret;
     }
 
     /**
@@ -63,11 +64,35 @@ public class Instruction {
      * @param data int
      * @return bytes[]
      */
-    public static byte[] getIntBytes(int data) {
+    public static ArrayList<Byte> getIntBytes(int data) {
         ByteBuffer buffer = ByteBuffer.allocate(4);
         buffer.order(ByteOrder.BIG_ENDIAN);
         buffer.putInt(data);
         byte[] bytes = buffer.array();
+        ArrayList<Byte> ret = new ArrayList<Byte>();
+        for (byte b : bytes)
+            ret.add(b);
+        return ret;
+//        int length = 4;
+//        ArrayList<Byte> bytesArr = new ArrayList<>();
+//        int start = 8 * (length-1);
+//        for(int i = 0 ; i < length; i++){
+//            bytesArr.add((byte) (( data >> ( start - i * 8 )) & 0xFF ));
+//        }
+//        byte[] bytes =  listTobyte(bytesArr);
+//        return bytes;
+    }
+
+    public static byte[] listTobyte(List<Byte> list) {
+        if (list == null || list.size() < 0)
+            return null;
+        byte[] bytes = new byte[list.size()];
+        int i = 0;
+        Iterator<Byte> iterator = list.iterator();
+        while (iterator.hasNext()) {
+            bytes[i] = iterator.next();
+            i++;
+        }
         return bytes;
     }
 
@@ -78,12 +103,15 @@ public class Instruction {
      * @param data int
      * @return bytes[]
      */
-    public static byte[] getLongBytes(long data) {
+    public static ArrayList<Byte> getLongBytes(long data) {
         ByteBuffer buffer = ByteBuffer.allocate(8);
         buffer.order(ByteOrder.BIG_ENDIAN);
         buffer.putLong(data);
         byte[] bytes = buffer.array();
-        return bytes;
+        ArrayList<Byte> ret = new ArrayList<Byte>();
+        for (byte b : bytes)
+            ret.add(b);
+        return ret;
     }
 
     /**
@@ -93,24 +121,29 @@ public class Instruction {
      * @param data double
      * @return bytes[]
      */
-    public static byte[] getDoubleBytes(double data) {
+    public static ArrayList<Byte> getDoubleBytes(double data) {
         ByteBuffer buffer = ByteBuffer.allocate(8);
         buffer.order(ByteOrder.BIG_ENDIAN);
         buffer.putDouble(data);
         byte[] bytes = buffer.array();
-        return bytes;
+        ArrayList<Byte> ret = new ArrayList<Byte>();
+        for (byte b : bytes)
+            ret.add(b);
+        return ret;
     }
 
     /**
      * byte[] 转 String
      * o0的格式是以8字节为单位的字节流，这个函数直接决定输出文件的编码格式！
+     * 实验表明，这个函数确实有问题！-8输出变成了0x3f3f3f3f
      *
      * @param bytes
      * @return
      */
-    public static String getString(byte[] bytes) {
-        String result = new String(bytes);
-        return result;
+    public static ArrayList<Byte> getString(ArrayList<Byte> bytes) {
+//        String result = new String(bytes);
+//        return result;
+        return bytes;
     }
 
     @Override
@@ -148,194 +181,207 @@ public class Instruction {
         return this.opt.name() + " " + this.x;
     }
 
-    @Override
-    public String toString() {
+    
+    public boolean toString(List<Byte> output) {
         switch (this.opt) {
             case nop:
-                return getString(getByteBytes(0x00));
+                return output.addAll(getString(getByteBytes(0x00)));
             case push:
-                // FIXME:push的操作数是u64类型
-                return getString(getByteBytes(0x01)) + getString(getLongBytes(this.z));
+                // push的操作数是u64类型
+                output.addAll(getString(getByteBytes(0x01)));
+                return output.addAll(getString(getLongBytes(this.z)));
             case pop:
-                return getString(getByteBytes(0x02));
+                return output.addAll(getString(getByteBytes(0x02)));
             case popn:
-                return getString(getByteBytes(0x03)) + getString(getIntBytes(this.x));
+                output.addAll(getString(getByteBytes(0x03)));
+                return output.addAll(getString(getIntBytes(this.x)));
             case dup:
-                return getString(getByteBytes(0x04));
+                return output.addAll(getString(getByteBytes(0x04)));
             case loca:
-                return getString(getByteBytes(0x0a)) + getString(getIntBytes(this.x));
+                output.addAll(getString(getByteBytes(0x0a)));
+                return output.addAll(getString(getIntBytes(this.x)));
             case arga:
-                return getString(getByteBytes(0x0b)) + getString(getIntBytes(this.x));
+                output.addAll(getString(getByteBytes(0x0b)));
+                return output.addAll(getString(getIntBytes(this.x)));
             case globa:
-                return getString(getByteBytes(0xc)) + getString(getIntBytes(this.x));
+                output.addAll(getString(getByteBytes(0xc)));
+                return output.addAll(getString(getIntBytes(this.x)));
             case load8:
-                return getString(getByteBytes(0x10));
+                return output.addAll(getString(getByteBytes(0x10)));
             case load16:
-                return getString(getByteBytes(0x11));
+                return output.addAll(getString(getByteBytes(0x11)));
             case load32:
-                return getString(getByteBytes(0x12));
+                return output.addAll(getString(getByteBytes(0x12)));
             case load64:
-                return getString(getByteBytes(0x13));
+                return output.addAll(getString(getByteBytes(0x13)));
             case store8:
-                return getString(getByteBytes(0x14));
+                return output.addAll(getString(getByteBytes(0x14)));
             case store16:
-                return getString(getByteBytes(0x15));
+                return output.addAll(getString(getByteBytes(0x15)));
             case store32:
-                return getString(getByteBytes(0x16));
+                return output.addAll(getString(getByteBytes(0x16)));
             case store64:
-                return getString(getByteBytes(0x17));
+                return output.addAll(getString(getByteBytes(0x17)));
             case alloc:
-                return getString(getByteBytes(0x18));
+                return output.addAll(getString(getByteBytes(0x18)));
             case free:
-                return getString(getByteBytes(0x19));
+                return output.addAll(getString(getByteBytes(0x19)));
             case stackalloc:
-                return getString(getByteBytes(0x1a)) + getString(getIntBytes(this.x));
+                output.addAll(getString(getByteBytes(0x1a)));
+                return output.addAll(getString(getIntBytes(this.x)));
             case addi:
-                return getString(getByteBytes(0x20));
+                return output.addAll(getString(getByteBytes(0x20)));
             case subi:
-                return getString(getByteBytes(0x21));
+                return output.addAll(getString(getByteBytes(0x21)));
             case muli:
-                return getString(getByteBytes(0x22));
+                return output.addAll(getString(getByteBytes(0x22)));
             case divi:
-                return getString(getByteBytes(0x23));
+                return output.addAll(getString(getByteBytes(0x23)));
             case addf:
-                return getString(getByteBytes(0x24));
+                return output.addAll(getString(getByteBytes(0x24)));
             case subf:
-                return getString(getByteBytes(0x25));
+                return output.addAll(getString(getByteBytes(0x25)));
             case mulf:
-                return getString(getByteBytes(0x26));
+                return output.addAll(getString(getByteBytes(0x26)));
             case divf:
-                return getString(getByteBytes(0x27));
+                return output.addAll(getString(getByteBytes(0x27)));
             case divu:
-                return getString(getByteBytes(0x28));
+                return output.addAll(getString(getByteBytes(0x28)));
             case shl:
-                return getString(getByteBytes(0x29));
+                return output.addAll(getString(getByteBytes(0x29)));
             case shr:
-                return getString(getByteBytes(0x2a));
+                return output.addAll(getString(getByteBytes(0x2a)));
             case and:
-                return getString(getByteBytes(0x2b));
+                return output.addAll(getString(getByteBytes(0x2b)));
             case or:
-                return getString(getByteBytes(0x2c));
+                return output.addAll(getString(getByteBytes(0x2c)));
             case xor:
-                return getString(getByteBytes(0x2d));
+                return output.addAll(getString(getByteBytes(0x2d)));
             case not:
-                return getString(getByteBytes(0x2e));
-            // cmp.T命令：
-            // 指令会在 lhs < rhs 时压入 -1, lhs > rhs 时压入 1,
-            // lhs == rhs 时压入 0。
-            // 浮点数无法比较时压入 0。
+                return output.addAll(getString(getByteBytes(0x2e)));
+            // cmp.T命令：output.addAll(
+            // 指令会在 lhsoutput.addAll( < rhs 时压入 -1, lhs > rhs 时压入 1,
+            // lhs == routput.addAll(hs 时压入 0。
+            // 浮点数无法比较时output.addAll(压入 0。
             case cmpi:
-                return getString(getByteBytes(0x30));
+                return output.addAll(getString(getByteBytes(0x30)));
             case cmpu:
-                return getString(getByteBytes(0x31));
+                return output.addAll(getString(getByteBytes(0x31)));
             case cmpf:
-                return getString(getByteBytes(0x32));
+                return output.addAll(getString(getByteBytes(0x32)));
             case negi:
-                return getString(getByteBytes(0x34));
+                return output.addAll(getString(getByteBytes(0x34)));
             case negf:
-                return getString(getByteBytes(0x35));
+                return output.addAll(getString(getByteBytes(0x35)));
             case itof:
-                return getString(getByteBytes(0x36));
+                return output.addAll(getString(getByteBytes(0x36)));
             case ftoi:
-                return getString(getByteBytes(0x37));
+                return output.addAll(getString(getByteBytes(0x37)));
             case shrl:
-                return getString(getByteBytes(0x38));
+                return output.addAll(getString(getByteBytes(0x38)));
             case setlt:
-                return getString(getByteBytes(0x39));
+                return output.addAll(getString(getByteBytes(0x39)));
             case setgt:
-                return getString(getByteBytes(0x3a));
+                return output.addAll(getString(getByteBytes(0x3a)));
             case br:
-                return getString(getByteBytes(0x41)) + getString(getIntBytes(this.x));
+                output.addAll(getString(getByteBytes(0x41)));
+                return output.addAll(getString(getIntBytes(this.x)));
             case brfalse:
-                return getString(getByteBytes(0x42)) + getString(getIntBytes(this.x));
+                output.addAll(getString(getByteBytes(0x42)));
+                return output.addAll(getString(getIntBytes(this.x)));
             case brtrue:
-                return getString(getByteBytes(0x43)) + getString(getIntBytes(this.x));
+                output.addAll(getString(getByteBytes(0x43)));
+                return output.addAll(getString(getIntBytes(this.x)));
             case call:
-                return getString(getByteBytes(0x48)) + getString(getIntBytes(this.x));
+                output.addAll(getString(getByteBytes(0x48)));
+                return output.addAll(getString(getIntBytes(this.x)));
             case ret:
-                return getString(getByteBytes(0x49));
+                return output.addAll(getString(getByteBytes(0x49)));
             case callname:
-                return getString(getByteBytes(0x4a)) + getString(getIntBytes(this.x));
+                output.addAll(getString(getByteBytes(0x4a)));
+                return output.addAll(getString(getIntBytes(this.x)));
             case scani:
-                return getString(getByteBytes(0x50));
+                return output.addAll(getString(getByteBytes(0x50)));
             case scanc:
-                return getString(getByteBytes(0x51));
+                return output.addAll(getString(getByteBytes(0x51)));
             case scanf:
-                return getString(getByteBytes(0x52));
+                return output.addAll(getString(getByteBytes(0x52)));
             case printi:
-                return getString(getByteBytes(0x54));
+                return output.addAll(getString(getByteBytes(0x54)));
             case printc:
-                return getString(getByteBytes(0x55));
+                return output.addAll(getString(getByteBytes(0x55)));
             case printf:
-                return getString(getByteBytes(0x56));
+                return output.addAll(getString(getByteBytes(0x56)));
             case prints:
-                return getString(getByteBytes(0x57));
+                return output.addAll(getString(getByteBytes(0x57)));
             case println:
-                return getString(getByteBytes(0x58));
-            default:// panic
-                return getString(getByteBytes(0xfe));
+                return output.addAll(getString(getByteBytes(0x58)));
+            default:// output.addAll(panic
+                return output.addAll(getString(getByteBytes(0xfe)));
         }
     }
 
-    public static String addHead() {
+    public static byte[] addHead() {
         // magic-number and version in o0
-        return getString(getIntBytes(0x72303b3e)) + getString(getIntBytes(0x00000001));
+        List<Byte> ret = new ArrayList<Byte>();
+        ret.addAll(getString(getIntBytes(0x72303b3e)));
+        ret.addAll(getString(getIntBytes(0x00000001)));
+        return listTobyte(ret);
     }
 
     public static ArrayList<Token> globalVarTable = new ArrayList<Token>();
     public static Stack<SymbolEntry> symbolTable = new Stack<SymbolEntry>();
 
-    public static String addGlob() throws CompileError {
-        // 应该用StringBuilder,懒得改了
-        String ret = new String();
-        ret += getString(getIntBytes(globalVarTable.size()));// glob.count
+    public static byte[] addGlob() throws CompileError {
+        List<Byte> ret = new ArrayList<Byte>();
+        ret.addAll(getString(getIntBytes(globalVarTable.size())));// glob.count
         for (Token t : globalVarTable) {
             SymbolEntry s = Analyser.getSymbol(symbolTable, t.getValueString());
             if ((s != null) && (s.getType() == Ty.UINT)) {
                 if (s.isConstant())
-                    ret += getString(getByteBytes(1));
+                    ret.addAll(getString(getByteBytes(1)));
                 else
-                    ret += getString(getByteBytes(0));
+                    ret.addAll(getString(getByteBytes(0)));
                 // 长度为8
-                ret += getString(getIntBytes(8));
+                ret.addAll(getString(getIntBytes(8)));
                 // 初始值为0
-                ret += getString(getLongBytes(0));
+                ret.addAll(getString(getLongBytes(0)));
             } else//字符串 或 函数名
             {
-                ret += getString(getByteBytes(1));// is_const
-                ret += getString(getIntBytes(t.getValueString().length()));// count
+                ret.addAll(getString(getByteBytes(1)));// is_const
+                ret.addAll(getString(getIntBytes(t.getValueString().length())));// count
                 String string = t.getValueString();
                 char[] ch = string.toCharArray();// 转ascii
 //                System.out.println("字符串长度为"+ch.length);
                 for (int i = 0; i < ch.length; i++) {
-                    ret += getString(getByteBytes(Integer.valueOf(ch[i]).byteValue()));
+                    ret.addAll(getString(getByteBytes(Integer.valueOf(ch[i]).byteValue())));
 //                    System.out.print(Integer.toHexString(Integer.valueOf(ch[i]).intValue())+" ");
                 }// value
             }
         }
-        return ret;
+        return listTobyte(ret);
     }
 
     public static ArrayList<Function> funcTable = new ArrayList<Function>();
 
-    public static String addFunc() {
-        String ret = new String();
-        ret += getString(getIntBytes(funcTable.size()));// func.count
+    public static byte[] addFunc() {
+        List<Byte> ret = new ArrayList<Byte>();
+        ret.addAll(getString(getIntBytes(funcTable.size())));// func.count
         for (Function f : funcTable) {
             int offset = calcFuncOffset(f.getName());// 函数在globTable中的偏移
-            ret += getString(getIntBytes(offset));// name,好像没什么用
+            ret.addAll(getString(getIntBytes(offset)));// name,好像没什么用
             if (f.returnType == Ty.VOID)
-                ret += getString(getIntBytes(0));// ret_slots
+                ret.addAll(getString(getIntBytes(0)));// ret_slots
             else
-                ret += getString(getIntBytes(1));// 返回一个int
-            ret += getString(getIntBytes(f.calParamSlot()));// param_slots
-            ret += getString(getIntBytes(100));// TODO:loc_slots
-            ret += getString(getIntBytes(f.instructions.size()));// body.count
+                ret.addAll(getString(getIntBytes(1)));// 返回一个int
+            ret.addAll(getString(getIntBytes(f.calParamSlot())));// param_slots
+            ret.addAll(getString(getIntBytes(f.localCount)));// loc_slots
+            ret.addAll(getString(getIntBytes(f.instructions.size())));// body.count
             for (Instruction i : f.instructions) {
-                ret += i.toString();// body items
+                i.toString(ret);// body items
             }
         }
-        return ret;
+        return listTobyte(ret);
     }
 
     private static int calcFuncOffset(String name) {

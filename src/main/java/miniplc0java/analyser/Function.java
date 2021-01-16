@@ -15,6 +15,7 @@ public class Function {
     // 函数的局部变量放多少个，要不先都给10个？
     public int offset;// 全局符号表偏移用于函数编号
     public int localOffset;// 函数表里的偏移(从1开始数)，用于call指令
+    public int localCount = 0;// 函数局部变量占用slot数的最大值
 
     // 不必考虑和变量的重名问题
     // 存这个列表是用来计算分配空间的

@@ -383,7 +383,7 @@ public final class Analyser {
     }
 
     private int calcGlobOffset() {
-        return this.globalVarTable.size()-1;
+        return this.globalVarTable.size() - 1;
     }
 
     /**
@@ -463,12 +463,17 @@ public final class Analyser {
                 // 添加到全局表
 //                if (this.currentDepth == 0)
 //                    addGlobVar(new Token(TokenType.UINT_LITERAL, rightExp.value));
+
             } else {
                 // 添加到全局表
 //                if (this.currentDepth == 0)
 //                    addGlobVar(new Token(TokenType.UINT_LITERAL, 0));
             }
-
+            // 添加到函数的局部变量
+            if (inFuncDec) {
+                getCurFunc().localCount++;
+//                System.out.println("got a loc var"+" "+name);
+            }
             // 分号
             expect(TokenType.SEMICOLON);
         }
@@ -510,6 +515,9 @@ public final class Analyser {
 //                addGlobVar(new Token(TokenType.UINT_LITERAL, rightExp.value));
             // 赋值
             getCurFunc().addInstruction(new Instruction(Operation.store64));
+            // 添加到函数的局部变量
+            if (inFuncDec)
+                getCurFunc().localCount++;
             // 分号
             expect(TokenType.SEMICOLON);
         }
@@ -520,6 +528,8 @@ public final class Analyser {
      * function_param_list -> function_param (',' function_param)*
      * function_param -> 'const'? IDENT ':' ty
      */
+    boolean inFuncDec = false;
+
     private void analyseFunctionDeclaration() throws CompileError {
         if (nextIf(TokenType.FN_KW) != null) {
             // 标识符
@@ -547,7 +557,7 @@ public final class Analyser {
             // 由于返回值要在参数之前压栈，但一开始不知道返回类型，所以先假设为int
             locs++;// 这个算无名变量
             addSymbol("LoCc" + locs, Ty.UINT, false, false, curPos);
-            int retArg = symbolTable.size()-1;
+            int retArg = symbolTable.size() - 1;
             // 参数列表，可以为空
             while (check(TokenType.IDENT) || check(TokenType.CONST_KW)) {
                 boolean isConst = false;
@@ -584,16 +594,18 @@ public final class Analyser {
             setFuncType(name, type);
             // 不需要返回值，再从符号表删掉
             if (type == Ty.VOID) {
-                for (int i = retArg; i < symbolTable.size()-1; i++)
-                {
-                    symbolTable.set(i, symbolTable.get(i+1));
+                for (int i = retArg; i < symbolTable.size() - 1; i++) {
+                    symbolTable.set(i, symbolTable.get(i + 1));
                 }
                 symbolTable.pop();
             }
             // 函数体，可能有return语句（需要检查类型）
             // 进入时记得增加嵌套层次
-            // TODO:局部变量在哪存
+            // 局部变量计数
+            inFuncDec = true;
+            // 函数体
             analyseBlockStmt();
+            inFuncDec = false;
             // 退出该嵌套层次，回到上一层
 //            for (SymbolEntry s : symbolTable){
 //                System.out.print(s.getName()+" ");
@@ -828,8 +840,7 @@ public final class Analyser {
             } else
                 ;// do nothing
         }
-        if (isCondExpr && isSingleCond)
-        {
+        if (isCondExpr && isSingleCond) {
             addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
         }
 
@@ -1047,7 +1058,7 @@ public final class Analyser {
         int i = symbolTable.size() - 1;
         for (; i >= 0; i--) {
             s = symbolTable.get(i);
-            if (s.getName().equals(name))
+            if (s.getName().equals(name) && s.getType() != Ty.FUNC)// 第二个条件:有些函数的参数仍是函数调用
                 break;
         }
         if (s != null) {
@@ -1057,8 +1068,10 @@ public final class Analyser {
             if (s.getDepth() == 0) {
                 offset = i;
                 // 如果是变量而不是函数，访问要取值
-                if (i != -1)
+                if (i != -1) {
                     getCurFunc().addInstruction(new Instruction(Operation.globa, offset));
+                    System.out.println(name);
+                }
             } else if (s.getDepth() == 1) {
                 for (; i >= 0; i--) {
                     if (symbolTable.get(i).getName().equals(getCurFunc().getName()))
