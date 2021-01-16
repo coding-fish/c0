@@ -719,8 +719,9 @@ public final class Analyser {
      *
      * @throws CompileError
      */
+    boolean inLoop = false;
     private void analyseWhileStmt() throws CompileError {
-        // TODO:bread & continue仅限循环内使用
+        // TODO:break & continue仅限循环内使用
         expect(TokenType.WHILE_KW);
         // 占位
         getCurFunc().addInstruction(new Instruction(Operation.br, 0));
@@ -732,7 +733,9 @@ public final class Analyser {
         // 占位
         getCurFunc().addInstruction(new Instruction(Operation.br, 0));
         int loc2 = getCurFunc().instructions.size() - 1;
+        inLoop = true;
         analyseBlockStmt();
+        inLoop = false;
         int loc3 = getCurFunc().instructions.size() - 1;
         loc3++;
         getCurFunc().addInstruction(new Instruction(Operation.br, loc1 - loc3));
@@ -794,12 +797,13 @@ public final class Analyser {
      * T -> F { * | / F}
      * F -> A ( as int_ty | double_ty )
      * A -> ( - ) I
-     * I -> IDENT | UNIT | DOUBLE | func_call | '(' E ')' | IDENT = E
+     * I -> IDENT | UINT | DOUBLE | func_call | '(' E ')' | IDENT = E
      */
+    boolean isSingleCond = true;// 在判断条件中时，表示这只有一项，需要加brtrue指令
     private ExpVal analyseExpression() throws CompileError {
         Function curFunc = getCurFunc();
         ExpVal expval = analyseC();// 第一项
-        boolean isSingleCond = true;// 在判断条件中时，表示这只有一项，需要加brtrue指令
+//        boolean isSingleCond = true;
         while (true) {
             var op = peek();
             if (op.getTokenType() != TokenType.EQ &&
@@ -840,6 +844,7 @@ public final class Analyser {
             } else
                 ;// do nothing
         }
+        // 单项的判断谓词
         if (isCondExpr && isSingleCond) {
             addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
         }
@@ -985,9 +990,12 @@ public final class Analyser {
             ExpVal ret = analyseExpression();
             expect(TokenType.R_PAREN);
             return ret;
-        } else
+        } else {
             // 说明是空的
+            if (!isSingleCond)
+                isCondExpr = true;
             return new ExpVal(Ty.VOID, 0);
+        }
     }
 
     // call_expr -> IDENT '(' call_param_list? ')'
