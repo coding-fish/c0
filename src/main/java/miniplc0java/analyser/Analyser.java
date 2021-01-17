@@ -1035,7 +1035,13 @@ public final class Analyser {
         }
         ExpVal expVal = analyseI();
         if (minuscount % 2 != 0)
-            getCurFunc().addInstruction(new Instruction(Operation.negi));
+        {
+            if (expVal.type == Ty.UINT)
+                getCurFunc().addInstruction(new Instruction(Operation.negi));
+            else
+                getCurFunc().addInstruction(new Instruction(Operation.negf));
+        }
+
         return expVal;
     }
 
@@ -1064,7 +1070,7 @@ public final class Analyser {
                 ExpVal rightExp = analyseExpression();
                 Ty leftType = getSymbol(symbolTable, nameToken.getValueString()).getType();
                 if (leftType != rightExp.type) {
-                    // TODO:赋值号两侧类型检查
+                    // 赋值号两侧类型检查
                     System.out.println(leftType + " unmatch " + rightExp.type);
                     throw new AnalyzeError(ErrorCode.TypeUnmatch, nameToken.getEndPos());
                 }

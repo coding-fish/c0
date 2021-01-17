@@ -129,7 +129,7 @@ public class App {
             if (debug) {
                 int line = 0;
                 for (Function f : Instruction.funcTable) {
-                    System.out.println("[Function " + f.offset + "]" + f.getName() + " " + f.localCount + "loc");
+                    System.out.println("[Function " + f.offset + "]" + f.getName() + " " + f.localCount + " " + f.calParamSlot() + "->0/1");
                     for (Instruction i : f.instructions) {
                         System.out.println(line + ":" + i.debug());
                         line++;

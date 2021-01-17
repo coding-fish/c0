@@ -23,7 +23,7 @@ public class Instruction {
     public Instruction(Operation opt) {
         this.opt = opt;
         this.x = 0;
-        this.y = 0;
+        this.y = 0.0;
     }
 
     // 一个操作数
@@ -35,6 +35,7 @@ public class Instruction {
         } else if (num instanceof Double) {
             this.y = (double) num;
             Double d = this.y;
+//            System.out.println("double "+d);
             this.z = Double.doubleToLongBits(d);// todo
         } else if (num instanceof Long) {
             this.z = (long) num;
