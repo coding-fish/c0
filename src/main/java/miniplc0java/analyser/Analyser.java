@@ -657,6 +657,10 @@ public final class Analyser {
             analyseIfStmt();
         else if (check(TokenType.WHILE_KW))
             analyseWhileStmt();
+        else if (check(TokenType.BREAK_KW))
+            analyseBreakStmt();
+        else if (check(TokenType.CONTINUE_KW))
+            analyseContinueStmt();
         else if (check(TokenType.RETURN_KW))
             analyseReturnStmt();
         else if (check(TokenType.L_BRACE))
@@ -721,9 +725,15 @@ public final class Analyser {
      * @throws CompileError
      */
     boolean inLoop = false;
+    List<Integer> breakPoints = new ArrayList<>();// 存放break语句的指令偏移
+    List<Integer> continuePoints = new ArrayList<>();// 存放continue语句的指令偏移
+
     private void analyseWhileStmt() throws CompileError {
         // TODO:break & continue仅限循环内使用
         expect(TokenType.WHILE_KW);
+        // 重置
+        breakPoints = new ArrayList<>();
+        continuePoints = new ArrayList<>();
         // 占位
         getCurFunc().addInstruction(new Instruction(Operation.br, 0));
         int loc1 = getCurFunc().instructions.size() - 1;
@@ -736,14 +746,49 @@ public final class Analyser {
         getCurFunc().addInstruction(new Instruction(Operation.br, 0));
         int loc2 = getCurFunc().instructions.size() - 1;
         inLoop = true;
-        analyseBlockStmt();
+        analyseBlockStmt();// 这里面可能有break或continue语句
         inLoop = false;
         int loc3 = getCurFunc().instructions.size() - 1;
+        // 占位+回填
         loc3++;
         getCurFunc().addInstruction(new Instruction(Operation.br, loc1 - loc3));
         // 回填
         // 同样也应确保后面还有指令，这与返回路径检查挂钩(while块是函数最后语句的情况)
         getCurFunc().instructions.set(loc2, new Instruction(Operation.br, loc3 - loc2));
+        // 回填break
+        for (Integer i : breakPoints) {
+            getCurFunc().instructions.set(i, new Instruction(Operation.br, loc3 - i));
+        }
+        // 回填continue
+        for (Integer j : continuePoints) {
+            getCurFunc().instructions.set(j, new Instruction(Operation.br, j - loc3));
+        }
+    }
+
+    private void analyseBreakStmt() throws CompileError {
+        Token breakToken = expect(TokenType.BREAK_KW);
+        if (inLoop) {
+            // 占位
+            getCurFunc().instructions.add(new Instruction(Operation.br, 0));
+            int loc = getCurFunc().instructions.size()-1;
+            breakPoints.add(loc);
+            expect(TokenType.SEMICOLON);
+        }
+        else
+            throw new AnalyzeError(ErrorCode.BreakDenied, breakToken.getEndPos());
+    }
+
+    private void analyseContinueStmt() throws CompileError {
+        Token breakToken = expect(TokenType.CONTINUE_KW);
+        if (inLoop) {
+            // 占位
+            getCurFunc().instructions.add(new Instruction(Operation.br, 0));
+            int loc = getCurFunc().instructions.size()-1;
+            continuePoints.add(loc);
+            expect(TokenType.SEMICOLON);
+        }
+        else
+            throw new AnalyzeError(ErrorCode.ContinueDenied, breakToken.getEndPos());
     }
 
     /**
@@ -802,6 +847,7 @@ public final class Analyser {
      * I -> IDENT | UINT | DOUBLE | func_call | '(' E ')' | IDENT = E
      */
     boolean isSingleCond = true;// 在判断条件中时，表示这只有一项，需要加brtrue指令
+
     private ExpVal analyseExpression() throws CompileError {
         Function curFunc = getCurFunc();
         ExpVal expval = analyseC();// 第一项
@@ -819,38 +865,66 @@ public final class Analyser {
             isSingleCond = false;
             // 运算符
             next();
-            analyseC();
+            ExpVal rightExp = analyseC();
             // 生成目标代码
-            if (op.getTokenType() == TokenType.EQ) {
-                addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
-                addFuncIns(curFunc.getName(), new Instruction(Operation.brfalse, 1));
-            } else if (op.getTokenType() == TokenType.NEQ) {
-                addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
-                addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
-            } else if (op.getTokenType() == TokenType.LT) {
-                addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
-                addFuncIns(curFunc.getName(), new Instruction(Operation.setlt));
-                addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
-            } else if (op.getTokenType() == TokenType.GT) {
-                addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
-                addFuncIns(curFunc.getName(), new Instruction(Operation.setgt));
-                addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
-            } else if (op.getTokenType() == TokenType.LE) {
-                addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
-                addFuncIns(curFunc.getName(), new Instruction(Operation.setgt));
-                addFuncIns(curFunc.getName(), new Instruction(Operation.brfalse, 1));
-            } else if (op.getTokenType() == TokenType.GE) {
-                addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
-                addFuncIns(curFunc.getName(), new Instruction(Operation.setlt));
-                addFuncIns(curFunc.getName(), new Instruction(Operation.brfalse, 1));
-            } else
-                ;// do nothing
+            if (rightExp.type == Ty.UINT) {
+                if (op.getTokenType() == TokenType.EQ) {
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.brfalse, 1));
+                } else if (op.getTokenType() == TokenType.NEQ) {
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
+                } else if (op.getTokenType() == TokenType.LT) {
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.setlt));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
+                } else if (op.getTokenType() == TokenType.GT) {
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.setgt));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
+                } else if (op.getTokenType() == TokenType.LE) {
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.setgt));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.brfalse, 1));
+                } else if (op.getTokenType() == TokenType.GE) {
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.setlt));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.brfalse, 1));
+                } else
+                    ;// do nothing
+            } else // double
+            {
+                if (op.getTokenType() == TokenType.EQ) {
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.cmpf));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.brfalse, 1));
+                } else if (op.getTokenType() == TokenType.NEQ) {
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.cmpi));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
+                } else if (op.getTokenType() == TokenType.LT) {
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.cmpf));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.setlt));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
+                } else if (op.getTokenType() == TokenType.GT) {
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.cmpf));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.setgt));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
+                } else if (op.getTokenType() == TokenType.LE) {
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.cmpf));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.setgt));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.brfalse, 1));
+                } else if (op.getTokenType() == TokenType.GE) {
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.cmpf));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.setlt));
+                    addFuncIns(curFunc.getName(), new Instruction(Operation.brfalse, 1));
+                } else
+                    ;// do nothing
+            }
         }
         // 单项的判断谓词
         if (isCondExpr && isSingleCond) {
             addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
         }
-
+//        System.out.println(expval.value+expval.type.toString());
         return expval;
     }
 
@@ -865,13 +939,20 @@ public final class Analyser {
             }
             // 运算符
             next();
-            analyseT();
+            ExpVal rightExp = analyseT();
+            // todo:跳过类型检查
             // 生成目标代码
-            if (op.getTokenType() == TokenType.PLUS)
-                getCurFunc().addInstruction(new Instruction(Operation.addi));
-            else if (op.getTokenType() == TokenType.MINUS)
-                getCurFunc().addInstruction(new Instruction(Operation.subi));
-            else
+            if (op.getTokenType() == TokenType.PLUS) {
+                if ((rightExp != null) && (rightExp.type == Ty.DOUBLE))
+                    getCurFunc().addInstruction(new Instruction(Operation.addf));
+                else
+                    getCurFunc().addInstruction(new Instruction(Operation.addi));
+            } else if (op.getTokenType() == TokenType.MINUS) {
+                if ((rightExp != null) && (rightExp.type == Ty.DOUBLE))
+                    getCurFunc().addInstruction(new Instruction(Operation.subf));
+                else
+                    getCurFunc().addInstruction(new Instruction(Operation.subi));
+            } else
                 ;// do nothing
         }
         return expVal;
@@ -888,13 +969,20 @@ public final class Analyser {
             }
             // 运算符
             next();
-            analyseF();
+            ExpVal rightExp = analyseF();
+            // todo:跳过类型检查
             // 生成目标代码
-            if (op.getTokenType() == TokenType.MUL)
-                getCurFunc().addInstruction(new Instruction(Operation.muli));
-            else if (op.getTokenType() == TokenType.DIV)
-                getCurFunc().addInstruction(new Instruction(Operation.divi));
-            else
+            if (op.getTokenType() == TokenType.MUL) {
+                if ((rightExp != null) && (rightExp.type == Ty.DOUBLE))
+                    getCurFunc().addInstruction(new Instruction(Operation.mulf));
+                else
+                    getCurFunc().addInstruction(new Instruction(Operation.muli));
+            } else if (op.getTokenType() == TokenType.DIV) {
+                if ((rightExp != null) && (rightExp.type == Ty.DOUBLE))
+                    getCurFunc().addInstruction(new Instruction(Operation.divf));
+                else
+                    getCurFunc().addInstruction(new Instruction(Operation.divi));
+            } else
                 ;// do nothing
         }
         return expVal;
@@ -906,11 +994,16 @@ public final class Analyser {
         if (check(TokenType.AS_KW)) {
             expect(TokenType.AS_KW);
             Token transTo = expect(TokenType.IDENT);
-            if (transTo.getValueString().equals("int") && expVal.type == Ty.DOUBLE)
+            if (transTo.getValueString().equals("int") && expVal.type == Ty.DOUBLE) {
+                // todo:改一下左边expVal的类型
+                expVal.type = Ty.UINT;
                 getCurFunc().addInstruction(new Instruction(Operation.ftoi));
-            else if (transTo.getValueString().equals("double") && expVal.type == Ty.UINT)
+            } else if (transTo.getValueString().equals("double") && expVal.type == Ty.UINT) {
+                // todo:改一下左边expVal的类型
+                expVal.type = Ty.DOUBLE;
+//                System.out.println(expVal.type.toString()+expVal.value);
                 getCurFunc().addInstruction(new Instruction(Operation.itof));
-            else
+            } else
                 ;// do nothing
         }
         return expVal;
@@ -967,17 +1060,22 @@ public final class Analyser {
 
                 SymbolEntry s = getSymbol(symbolTable, nameToken.getValueString());
 //                return new ExpVal(s.getType(), nameToken.getValue());
-                // TODO:假设变量都是int类型的
-                return new ExpVal(Ty.UINT, nameToken.getValue());
+                if (s.getType() == Ty.UINT)
+                    return new ExpVal(Ty.UINT, nameToken.getValue());
+                else// if DOUBLE
+                    return new ExpVal(Ty.DOUBLE, nameToken.getValue());
             }
         } else if (check(TokenType.UINT_LITERAL)) {
             Token numToken = expect(TokenType.UINT_LITERAL);
-            getCurFunc().addInstruction(new Instruction(Operation.push, (int) numToken.getValue()));
-            return new ExpVal(Ty.UINT, (int) numToken.getValue());
+//            System.out.println(Long.valueOf(numToken.getValueString()));
+            // 不要用getLong！！！
+            getCurFunc().addInstruction(new Instruction(Operation.push, Long.valueOf(numToken.getValueString())));
+            return new ExpVal(Ty.UINT, Long.valueOf(numToken.getValueString()));
         } else if (check(TokenType.DOUBLE_LITERAL)) {
             Token doubleToken = expect(TokenType.DOUBLE_LITERAL);
-            getCurFunc().addInstruction(new Instruction(Operation.push, (double) doubleToken.getValue()));
-            return new ExpVal(Ty.DOUBLE, (double) doubleToken.getValue());
+//            System.out.println("Find a double:"+doubleToken.getValue());
+            getCurFunc().addInstruction(new Instruction(Operation.push, Double.valueOf(doubleToken.getValueString())));
+            return new ExpVal(Ty.DOUBLE, Double.valueOf(doubleToken.getValueString()));
         } else if (check(TokenType.STRING_LITERAL)) {
             // 字符串字面量要加入全局表
             addGlobVar(expect(TokenType.STRING_LITERAL));
@@ -1020,8 +1118,8 @@ public final class Analyser {
                 getCurFunc().addInstruction(new Instruction(Operation.stackalloc, 0));
             else if (callee.returnType == Ty.UINT)
                 getCurFunc().addInstruction(new Instruction(Operation.stackalloc, 1));
-            else
-                ;// 其他返回类型
+            else// todo:其他返回类型，如double
+                getCurFunc().addInstruction(new Instruction(Operation.stackalloc, 1));
         }
         // 压入参数
         expect(TokenType.L_PAREN);
@@ -1080,7 +1178,7 @@ public final class Analyser {
                 // 如果是变量而不是函数，访问要取值
                 if (i != -1) {
                     getCurFunc().addInstruction(new Instruction(Operation.globa, offset));
-                    System.out.println(name);
+//                    System.out.println(name);
                 }
             } else if (s.getDepth() == 1) {
                 for (; i >= 0; i--) {

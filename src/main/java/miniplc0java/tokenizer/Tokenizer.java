@@ -59,7 +59,8 @@ public class Tokenizer {
                 ( Character.isDigit(it.peekChar()) ||
                         it.peekChar() == '.' ||
                         it.peekChar() == 'e' ||
-                        it.peekChar() == 'E') )
+                        it.peekChar() == 'E' ||
+                        it.peekChar() == '-') )
         {
             digitStr.append(it.nextChar());
         }
@@ -68,11 +69,15 @@ public class Tokenizer {
             String s = digitStr.toString();
             if (s.contains(".")) {
                 double digitD = Double.parseDouble(s);
+                // todo:实现double类型变量的目标代码生成
                 return new Token(TokenType.DOUBLE_LITERAL, digitD, startPos, it.currentPos());
             } else {
-                // 默认无符号整数
-                Integer digitI = Integer.valueOf(s);
-                return new Token(TokenType.UINT_LITERAL, digitI, startPos, it.currentPos());
+                // 默认无符号整数，可能大于int范围，要用Long存
+//                System.out.println(s);
+//                Integer digitI = Integer.valueOf(s);// 范围不够
+                Long digitL = Long.valueOf(s);
+//                System.out.println(digitL);
+                return new Token(TokenType.UINT_LITERAL, digitL, startPos, it.currentPos());
             }
         } catch (ArithmeticException e) {
             throw new TokenizeError(ErrorCode.IntegerOverflow, startPos);

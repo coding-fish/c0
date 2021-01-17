@@ -16,8 +16,8 @@ import java.util.logging.Logger;
 public class Instruction {
     private Operation opt;//u8
     int x;  //u32 i32
-    double y; //u64 i64
-    long z;
+    double y;
+    long z; //u64 i64
 
     // 没有操作数
     public Instruction(Operation opt) {
@@ -32,8 +32,13 @@ public class Instruction {
         if (num instanceof Integer) {
             this.x = (int) num;
             this.z = Long.valueOf(this.x);
-        } else if (num instanceof Double)// TODO:// 似乎，没有这个类型的操作数?
+        } else if (num instanceof Double) {
             this.y = (double) num;
+            Double d = this.y;
+            this.z = Double.doubleToLongBits(d);// todo
+        } else if (num instanceof Long) {
+            this.z = (long) num;
+        }
 //        else
 //            this.x = (int) num;
     }
@@ -178,10 +183,24 @@ public class Instruction {
     }
 
     public String debug() {
-        return this.opt.name() + " " + this.x;
+        if (this.y != 0)
+            return this.opt.name() + " " + this.y;
+        else if (this.x != 0)
+            return this.opt.name() + " " + this.x;
+        else
+            return this.opt.name() + " " + this.z;
     }
 
-    
+    private static List<Byte> long2bytes(int length, long target) {
+        ArrayList<Byte> bytes = new ArrayList<>();
+        int start = 8 * (length - 1);
+        for (int i = 0; i < length; i++) {
+            bytes.add((byte) ((target >> (start - i * 8)) & 0xFF));
+        }
+        return bytes;
+    }
+
+
     public boolean toString(List<Byte> output) {
         switch (this.opt) {
             case nop:
@@ -189,7 +208,10 @@ public class Instruction {
             case push:
                 // push的操作数是u64类型
                 output.addAll(getString(getByteBytes(0x01)));
-                return output.addAll(getString(getLongBytes(this.z)));
+                if (this.z != 0)
+                    return output.addAll(getString(getLongBytes(this.z)));
+                else
+                    return output.addAll(long2bytes(8, this.z));
             case pop:
                 return output.addAll(getString(getByteBytes(0x02)));
             case popn:
