@@ -651,12 +651,16 @@ public final class Analyser {
      */
     private void analyseStatement() throws CompileError {
         // 声明语句
+        if (check(TokenType.EOF))
+            throw new AnalyzeError(ErrorCode.ExpectedToken, expect(TokenType.EOF).getEndPos());
         if (check(TokenType.LET_KW))
             analyseVariableDeclaration();
         else if (check(TokenType.CONST_KW))
             analyseConstantDeclaration();
         else if (check(TokenType.IF_KW))
             analyseIfStmt();
+        else if (check(TokenType.ELSE_KW))// else只能跟在if里面，不能单独出现
+            throw new AnalyzeError(ErrorCode.ElseHaveNoIf, expect(TokenType.ELSE_KW).getEndPos());
         else if (check(TokenType.WHILE_KW))
             analyseWhileStmt();
         else if (check(TokenType.BREAK_KW))
@@ -1090,7 +1094,7 @@ public final class Analyser {
             return new ExpVal(Ty.UINT, charToken.getValue());
         } else if (check(TokenType.L_PAREN)) {
             expect(TokenType.L_PAREN);
-            // fixme
+            // fixme:对于((a+1)>1)没有问题,((a))可能会产生错误
             isSingleCond = false;
             ExpVal ret = analyseExpression();
             expect(TokenType.R_PAREN);
