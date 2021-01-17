@@ -359,7 +359,8 @@ public class Instruction {
         ret.addAll(getString(getIntBytes(globalVarTable.size())));// glob.count
         for (Token t : globalVarTable) {
             SymbolEntry s = Analyser.getSymbol(symbolTable, t.getValueString());
-            if ((s != null) && (s.getType() == Ty.UINT)) {
+            // u64和f64大小相同!!!
+            if ((s != null) && (s.getType() == Ty.UINT || s.getType() == Ty.DOUBLE)) {
                 if (s.isConstant())
                     ret.addAll(getString(getByteBytes(1)));
                 else
@@ -397,6 +398,7 @@ public class Instruction {
             else
                 ret.addAll(getString(getIntBytes(1)));// 返回一个int
             ret.addAll(getString(getIntBytes(f.calParamSlot())));// param_slots
+//            System.out.println(f.getName()+" "+f.calParamSlot());
             ret.addAll(getString(getIntBytes(f.localCount)));// loc_slots
             ret.addAll(getString(getIntBytes(f.instructions.size())));// body.count
             for (Instruction i : f.instructions) {

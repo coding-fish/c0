@@ -68,11 +68,12 @@ public class Function {
      */
     public int calParamSlot() {
         int slots = 0;// 一个slot占8字节
+        // 此时返回值也已经事先加入到参数列表中了，所以slot不需要额外留值
         for (Variable v : paramList) {
             if (v.type == Ty.UINT)
                 slots += 1;
             else if (v.type == Ty.DOUBLE)
-                slots += 2;
+                slots += 1;
             ;//some operations else
         }
         return slots;

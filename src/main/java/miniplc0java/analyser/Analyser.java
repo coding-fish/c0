@@ -450,6 +450,7 @@ public final class Analyser {
             addSymbol(name, type, false, false, curPos);
             // 等于号
             if (nextIf(TokenType.ASSIGN) != null) {
+                // fixme
                 locateVar(name, curPos);
                 // 表达式(带类型，可能发生类型转换)
                 ExpVal rightExp = analyseExpression();
@@ -500,6 +501,7 @@ public final class Analyser {
                 throw new AnalyzeError(ErrorCode.VarTypeVoid, curPos);
             addSymbol(name, type, true, true, curPos);
             // 定位，便于赋值
+            // fixme
             locateVar(name, curPos);
             // 等于号,const类型必须赋值
             expect(TokenType.ASSIGN);
@@ -1051,7 +1053,6 @@ public final class Analyser {
                     System.out.println(leftType + " unmatch " + rightExp.type);
                     throw new AnalyzeError(ErrorCode.TypeUnmatch, nameToken.getEndPos());
                 }
-
                 getCurFunc().addInstruction(new Instruction(Operation.store64));
                 return new ExpVal(Ty.VOID, 1);
             } else {
