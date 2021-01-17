@@ -849,6 +849,7 @@ public final class Analyser {
      * I -> IDENT | UINT | DOUBLE | func_call | '(' E ')' | IDENT = E
      */
     boolean isSingleCond = true;// 在判断条件中时，表示这只有一项，需要加brtrue指令
+    boolean inCall = false;// 函数调用时，参数列表里面的表达式也可能是一项，导致生成俩brtrue
 
     private ExpVal analyseExpression() throws CompileError {
         Function curFunc = getCurFunc();
@@ -923,7 +924,8 @@ public final class Analyser {
             }
         }
         // 单项的判断谓词
-        if (isCondExpr && isSingleCond) {
+        if (isCondExpr && isSingleCond && !inCall) {
+            System.out.println(curFunc.getName()+peek().getValueString());
             addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
         }
 //        System.out.println(expval.value+expval.type.toString());
@@ -1124,6 +1126,7 @@ public final class Analyser {
         }
         // 压入参数
         expect(TokenType.L_PAREN);
+        inCall = true;
         if (!check(TokenType.R_PAREN)) {
             // 参数列表非空
             // TODO:逐个检查参数是否与声明对应，包括类型和个数
@@ -1136,6 +1139,7 @@ public final class Analyser {
             }
         }
         expect(TokenType.R_PAREN);
+        inCall = false;
         // 调用call系列指令
         // 库函数
         if (isLib) {
@@ -1143,8 +1147,10 @@ public final class Analyser {
             // 在全局表里，不妨把函数名看做字符串
             // 库函数每次压一个进去，index就是表里最后面的那个
             getCurFunc().addInstruction(new Instruction(Operation.callname, globalVarTable.size() - 1));
-            if (funcName.equals("getint") || funcName.equals("getdouble") || funcName.equals("getchar"))
+            if (funcName.equals("getint") || funcName.equals("getchar"))
                 return new ExpVal(Ty.UINT, 1);
+            else if (funcName.equals("getdouble"))
+                return new ExpVal(Ty.DOUBLE, 1);
             else
                 return new ExpVal(Ty.VOID, 1);
         }

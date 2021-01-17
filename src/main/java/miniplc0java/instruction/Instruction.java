@@ -398,7 +398,7 @@ public class Instruction {
             else
                 ret.addAll(getString(getIntBytes(1)));// 返回一个int
             ret.addAll(getString(getIntBytes(f.calParamSlot())));// param_slots
-//            System.out.println(f.getName()+" "+f.calParamSlot());
+//        System.out.println(f.getName()+" "+f.localCount+" "+f.calParamSlot()+"->0/1");
             ret.addAll(getString(getIntBytes(f.localCount)));// loc_slots
             ret.addAll(getString(getIntBytes(f.instructions.size())));// body.count
             for (Instruction i : f.instructions) {
