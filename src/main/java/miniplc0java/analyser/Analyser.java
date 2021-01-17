@@ -1090,6 +1090,8 @@ public final class Analyser {
             return new ExpVal(Ty.UINT, charToken.getValue());
         } else if (check(TokenType.L_PAREN)) {
             expect(TokenType.L_PAREN);
+            // fixme
+            isSingleCond = false;
             ExpVal ret = analyseExpression();
             expect(TokenType.R_PAREN);
             return ret;
