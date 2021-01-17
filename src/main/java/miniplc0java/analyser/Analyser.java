@@ -731,15 +731,16 @@ public final class Analyser {
      * @throws CompileError
      */
     boolean inLoop = false;
-    List<Integer> breakPoints = new ArrayList<>();// 存放break语句的指令偏移
-    List<Integer> continuePoints = new ArrayList<>();// 存放continue语句的指令偏移
+    int loopDepth = 0;// while存在嵌套问题，不同的break和continue指向的位置不同
+    Stack<Integer> breakPoints = new Stack<>();// 存放break语句的指令偏移
+    Stack<Integer> continuePoints = new Stack<>();// 存放continue语句的指令偏移
 
     private void analyseWhileStmt() throws CompileError {
-        // TODO:break & continue仅限循环内使用
+        // break & continue仅限循环内使用
         expect(TokenType.WHILE_KW);
-        // 重置
-        breakPoints = new ArrayList<>();
-        continuePoints = new ArrayList<>();
+        loopDepth++;// 与代码块{}的嵌套深度不同
+        int breakBP = breakPoints.size();
+        int continueBP = continuePoints.size();
         // 占位
         getCurFunc().addInstruction(new Instruction(Operation.br, 0));
         int loc1 = getCurFunc().instructions.size() - 1;
@@ -752,7 +753,7 @@ public final class Analyser {
         getCurFunc().addInstruction(new Instruction(Operation.br, 0));
         int loc2 = getCurFunc().instructions.size() - 1;
         inLoop = true;
-        analyseBlockStmt();// 这里面可能有break或continue语句
+        analyseBlockStmt();// 这里面可能有break或continue语句,或嵌套了一层while!!!
         inLoop = false;
         int loc3 = getCurFunc().instructions.size() - 1;
         // 占位+回填
@@ -762,22 +763,29 @@ public final class Analyser {
         // 同样也应确保后面还有指令，这与返回路径检查挂钩(while块是函数最后语句的情况)
         getCurFunc().instructions.set(loc2, new Instruction(Operation.br, loc3 - loc2));
         // 回填break
-        for (Integer i : breakPoints) {
+        while (breakPoints.size() > breakBP)
+        {
+            int i = breakPoints.lastElement();
             getCurFunc().instructions.set(i, new Instruction(Operation.br, loc3 - i));
+            breakPoints.pop();
         }
         // 回填continue
-        for (Integer j : continuePoints) {
+        while (continuePoints.size() > continueBP)
+        {
+            int j = continuePoints.lastElement();
             getCurFunc().instructions.set(j, new Instruction(Operation.br, j - loc3));
+            continuePoints.pop();
         }
+        loopDepth--;
     }
 
     private void analyseBreakStmt() throws CompileError {
         Token breakToken = expect(TokenType.BREAK_KW);
         if (inLoop) {
             // 占位
-            getCurFunc().instructions.add(new Instruction(Operation.br, 0));
+            getCurFunc().instructions.add(new Instruction(Operation.br, 888));
             int loc = getCurFunc().instructions.size()-1;
-            breakPoints.add(loc);
+            breakPoints.push(loc);
             expect(TokenType.SEMICOLON);
         }
         else
@@ -788,9 +796,9 @@ public final class Analyser {
         Token breakToken = expect(TokenType.CONTINUE_KW);
         if (inLoop) {
             // 占位
-            getCurFunc().instructions.add(new Instruction(Operation.br, 0));
+            getCurFunc().instructions.add(new Instruction(Operation.br, 666));
             int loc = getCurFunc().instructions.size()-1;
-            continuePoints.add(loc);
+            continuePoints.push(loc);
             expect(TokenType.SEMICOLON);
         }
         else
@@ -929,7 +937,7 @@ public final class Analyser {
         }
         // 单项的判断谓词
         if (isCondExpr && isSingleCond && !inCall) {
-            System.out.println(curFunc.getName()+peek().getValueString());
+//            System.out.println(curFunc.getName()+peek().getValueString());
             addFuncIns(curFunc.getName(), new Instruction(Operation.brtrue, 1));
         }
 //        System.out.println(expval.value+expval.type.toString());
@@ -999,15 +1007,16 @@ public final class Analyser {
     //F -> A ( as int_ty | double_ty )
     private ExpVal analyseF() throws CompileError {
         ExpVal expVal = analyseA();
-        if (check(TokenType.AS_KW)) {
+        // 注意as可以多次连接,如uia = uib as double as int也是合法的
+        while (check(TokenType.AS_KW)) {
             expect(TokenType.AS_KW);
             Token transTo = expect(TokenType.IDENT);
             if (transTo.getValueString().equals("int") && expVal.type == Ty.DOUBLE) {
-                // todo:改一下左边expVal的类型
+                // 改一下左边expVal的类型,symbolTable不动，因为是临时转的
                 expVal.type = Ty.UINT;
                 getCurFunc().addInstruction(new Instruction(Operation.ftoi));
             } else if (transTo.getValueString().equals("double") && expVal.type == Ty.UINT) {
-                // todo:改一下左边expVal的类型
+                // 改一下左边expVal的类型
                 expVal.type = Ty.DOUBLE;
 //                System.out.println(expVal.type.toString()+expVal.value);
                 getCurFunc().addInstruction(new Instruction(Operation.itof));

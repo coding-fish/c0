@@ -114,12 +114,11 @@ public class App {
             // pass
             boolean debug = false;
             if (debug)
-                for (Token t : Instruction.globalVarTable)
-                {
-                    if (Analyser.getSymbol(Instruction.symbolTable, t.getValueString())!=null)
-                        System.out.println(t.getValueString()+" "+Analyser.getSymbol(Instruction.symbolTable, t.getValueString()).getType());
+                for (Token t : Instruction.globalVarTable) {
+                    if (Analyser.getSymbol(Instruction.symbolTable, t.getValueString()) != null)
+                        System.out.println(t.getValueString() + " " + Analyser.getSymbol(Instruction.symbolTable, t.getValueString()).getType());
                     else
-                        System.out.println(t.getValueString()+" "+"STRING");
+                        System.out.println(t.getValueString() + " " + "STRING");
                 }
 //            System.out.println("输出函数指令");
             // pass
@@ -127,12 +126,14 @@ public class App {
 //                System.out.println(f.getReturnType());
 //            }
             output.write(Instruction.addFunc());
-            if (debug)
-            {
+            if (debug) {
+                int line = 0;
                 for (Function f : Instruction.funcTable) {
-                    System.out.println("[Function "+f.offset+"]"+f.getName()+" "+f.localCount+"loc");
-                    for (Instruction i : f.instructions)
-                        System.out.println(i.debug());
+                    System.out.println("[Function " + f.offset + "]" + f.getName() + " " + f.localCount + "loc");
+                    for (Instruction i : f.instructions) {
+                        System.out.println(line + ":" + i.debug());
+                        line++;
+                    }
                 }
             }
         } else {
