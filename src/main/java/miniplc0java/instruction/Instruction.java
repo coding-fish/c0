@@ -36,7 +36,7 @@ public class Instruction {
             this.y = (double) num;
             Double d = this.y;
 //            System.out.println("double "+d);
-            this.z = Double.doubleToLongBits(d);// todo
+            this.z = Double.doubleToLongBits(d);// double -> long
         } else if (num instanceof Long) {
             this.z = (long) num;
         }
@@ -306,9 +306,10 @@ public class Instruction {
                 return output.addAll(getString(getByteBytes(0x39)));
             case setgt:
                 return output.addAll(getString(getByteBytes(0x3a)));
-            case br:
+            case br:// 操作数可能是负数
                 output.addAll(getString(getByteBytes(0x41)));
-                return output.addAll(getString(getIntBytes(this.x)));
+                return output.addAll((long2bytes(4, this.z)));// fixme
+//            return output.addAll(getString(getIntBytes(this.x)));
             case brfalse:
                 output.addAll(getString(getByteBytes(0x42)));
                 return output.addAll(getString(getIntBytes(this.x)));

@@ -25,7 +25,7 @@ public class Token {
     // 绕过错误处理，不需要存储位置的构造方法
     public Token(TokenType tokenType, Object value) {
         this.tokenType = tokenType;
-        this.value = value;// FIXME:.toString();
+        this.value = value;
     }
 
     public Token(Token token) {

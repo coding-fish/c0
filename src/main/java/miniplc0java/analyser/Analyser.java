@@ -450,7 +450,6 @@ public final class Analyser {
             addSymbol(name, type, false, false, curPos);
             // 等于号
             if (nextIf(TokenType.ASSIGN) != null) {
-                // fixme
                 locateVar(name, curPos);
                 // 表达式(带类型，可能发生类型转换)
                 ExpVal rightExp = analyseExpression();
@@ -501,7 +500,6 @@ public final class Analyser {
                 throw new AnalyzeError(ErrorCode.VarTypeVoid, curPos);
             addSymbol(name, type, true, true, curPos);
             // 定位，便于赋值
-            // fixme
             locateVar(name, curPos);
             // 等于号,const类型必须赋值
             expect(TokenType.ASSIGN);
@@ -736,7 +734,7 @@ public final class Analyser {
     Stack<Integer> continuePoints = new Stack<>();// 存放continue语句的指令偏移
 
     private void analyseWhileStmt() throws CompileError {
-        // break & continue仅限循环内使用
+        // FIXME:break & continue的实现(仅循环内使用
         expect(TokenType.WHILE_KW);
         loopDepth++;// 与代码块{}的嵌套深度不同
         int breakBP = breakPoints.size();
@@ -754,7 +752,8 @@ public final class Analyser {
         int loc2 = getCurFunc().instructions.size() - 1;
         inLoop = true;
         analyseBlockStmt();// 这里面可能有break或continue语句,或嵌套了一层while!!!
-        inLoop = false;
+        if (loopDepth == 1)
+            inLoop = false;
         int loc3 = getCurFunc().instructions.size() - 1;
         // 占位+回填
         loc3++;
@@ -770,10 +769,12 @@ public final class Analyser {
             breakPoints.pop();
         }
         // 回填continue
+//        for (Integer i : continuePoints)
+//            System.out.println(i);
         while (continuePoints.size() > continueBP)
         {
             int j = continuePoints.lastElement();
-            getCurFunc().instructions.set(j, new Instruction(Operation.br, j - loc3));
+            getCurFunc().instructions.set(j, new Instruction(Operation.br, loc1 - j));
             continuePoints.pop();
         }
         loopDepth--;
@@ -786,6 +787,7 @@ public final class Analyser {
             getCurFunc().instructions.add(new Instruction(Operation.br, 888));
             int loc = getCurFunc().instructions.size()-1;
             breakPoints.push(loc);
+//            System.out.println(loc+":break in depth"+loopDepth);
             expect(TokenType.SEMICOLON);
         }
         else
@@ -799,6 +801,7 @@ public final class Analyser {
             getCurFunc().instructions.add(new Instruction(Operation.br, 666));
             int loc = getCurFunc().instructions.size()-1;
             continuePoints.push(loc);
+//            System.out.println(loc+":continue in depth"+loopDepth);
             expect(TokenType.SEMICOLON);
         }
         else
@@ -1140,9 +1143,9 @@ public final class Analyser {
             Function callee = getFunc(this.funcTable, funcName);
             if (callee.returnType == Ty.VOID)
                 getCurFunc().addInstruction(new Instruction(Operation.stackalloc, 0));
-            else if (callee.returnType == Ty.UINT)
+            else if (callee.returnType == Ty.UINT || callee.returnType == Ty.DOUBLE)
                 getCurFunc().addInstruction(new Instruction(Operation.stackalloc, 1));
-            else// todo:其他返回类型，如double
+            else// 其他返回类型,应该是没有
                 getCurFunc().addInstruction(new Instruction(Operation.stackalloc, 1));
         }
         // 压入参数
@@ -1177,7 +1180,7 @@ public final class Analyser {
         }
         // 自定义函数
         else {
-            // FIXME:其实Function的属性offset已经记录了位置
+            // 其实Function的属性offset已经记录了位置
             getCurFunc().addInstruction(new Instruction(Operation.call, calcFuncOffset(funcName, curPos)));
             return new ExpVal(getFunc(this.funcTable, funcName).getReturnType(), 1);
         }

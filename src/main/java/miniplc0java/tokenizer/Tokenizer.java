@@ -69,7 +69,6 @@ public class Tokenizer {
             String s = digitStr.toString();
             if (s.contains(".")) {
                 double digitD = Double.parseDouble(s);
-                // todo:实现double类型变量的目标代码生成
                 return new Token(TokenType.DOUBLE_LITERAL, digitD, startPos, it.currentPos());
             } else {
                 // 默认无符号整数，可能大于int范围，要用Long存
